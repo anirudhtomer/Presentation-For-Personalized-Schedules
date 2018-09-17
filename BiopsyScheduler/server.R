@@ -90,9 +90,10 @@ shinyServer(function(input, output, session) {
       curVisitTime = (currentDateTimeSeconds - firstVisitDateTimeSeconds)/(365 * 24 * 60 * 60)
       
       if(curVisitTime > 10){
-        shinyalert("Cannot make a biopsy plan", 
-                   paste0("We can only make biopsy plans for a period of 10 years ",
-                          "since the beginning of AS for a patient. The current date ",
+        shinyalert("Cannot predict risk today", 
+                   paste0("We can only predict risk of cancer progression ",
+                          "for a period of 10 years since the beginning ",
+                          " of AS for a patient. The current date ",
                           format(Sys.time(), format = "%b %e, %Y"), 
                           " is more than 10 years since the first visit of the patient on ", 
                           format(as.POSIXct(data$dom[1], origin = "1582-10-14"), format = "%b %e, %Y"), "."),
@@ -154,9 +155,10 @@ shinyServer(function(input, output, session) {
     curVisitTime = (currentDateTimeSeconds - firstVisitDateTimeSeconds)/(365 * 24 * 60 * 60)
     
     if(curVisitTime > 10){
-      shinyalert("Cannot make a biopsy plan", 
-                 paste0("We can only make biopsy plans for a period of 10 years ",
-                        "since the beginning of AS for a patient. The current date ",
+      shinyalert("Cannot predict risk today", 
+                 paste0("We can only predict risk of cancer progression ",
+                        "for a period of 10 years since the beginning ",
+                        " of AS for a patient. The current date ",
                         format(Sys.time(), format = "%b %e, %Y"), 
                         " is more than 10 years since the first visit of the patient on ", 
                         format(as.POSIXct(data$dom[1], origin = "1582-10-14"), format = "%b %e, %Y"), "."),
@@ -191,21 +193,21 @@ shinyServer(function(input, output, session) {
         output$biopsy_decision_yes = renderText("Biopsy recommended")
         output$biopsy_decision_no = renderText("")
         output$biopsy_decision_reason = renderUI(HTML(paste0("<b> Reason: </b> Patient's current risk of cancer progression is ",
-                                                             round(meanRiskProb*100,2), "%, which is more than the maximum acceptable risk of ",
+                                                             round(meanRiskProb*100,2), "%, which is more than the maximum acceptable risk (biopsy threshold) of ",
                                                              round(riskThreshold*100,2), "%.")))
         
       }else{
         output$biopsy_decision_yes = renderText("")
         output$biopsy_decision_no = renderText("Biopsy not recommended")
         output$biopsy_decision_reason = renderUI(HTML(paste0("<b> Reason: </b> Although patient's current risk of cancer progression of ",
-                                                             round(meanRiskProb*100,2), "%, is more than the maximum acceptable risk of ",
+                                                             round(meanRiskProb*100,2), "%, is more than the maximum acceptable risk (biopsy threshold) of ",
                                                              round(riskThreshold*100,2), "%, the last biopsy was conducted less than 1 year ago.")))
       }
     }else{
       output$biopsy_decision_yes = renderText("")
       output$biopsy_decision_no = renderText("Biopsy not recommended")
       output$biopsy_decision_reason = renderUI(HTML(paste0("<b> Reason: </b> Patient's current risk of cancer progression is ",
-                                                           round(meanRiskProb*100,2), "%, which is less than the maximum acceptable risk of ",
+                                                           round(meanRiskProb*100,2), "%, which is less than the maximum acceptable risk (biopsy threshold) of ",
                                                            round(riskThreshold*100,2), "%.")))
       
     }

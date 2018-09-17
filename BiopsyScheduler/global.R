@@ -1,12 +1,13 @@
-source("/home/a_tomer/Google Drive/PhD/src/prias/src/decision_analytic/predictPSADRE.R")
-load("/home/a_tomer/Google Drive/PhD/src/prias/Rdata/decision_analytic/DRE_PSA/mvJoint_dre_psa_dre_value_light.Rdata")
-load("/home/a_tomer/Google Drive/PhD/src/prias/Rdata/decision_analytic/DRE_PSA/thresholdsList.Rdata")
-load("/home/a_tomer/Google Drive/PhD/src/prias/Rdata/decision_analytic/Simulation/scheduleResCombined.Rdata")
-levels(scheduleResCombined$methodName)[5] = "Risk: Dynamic"
-scheduleResCombined = scheduleResCombined[scheduleResCombined$methodName!=levels(scheduleResCombined$methodName)[6],]
-scheduleResCombined$methodName = droplevels(scheduleResCombined$methodName)
+# source("/home/a_tomer/Google Drive/PhD/src/prias/src/decision_analytic/predictPSADRE.R")
+# load("/home/a_tomer/Google Drive/PhD/src/prias/Rdata/decision_analytic/DRE_PSA/mvJoint_dre_psa_dre_value_light.Rdata")
+# load("/home/a_tomer/Google Drive/PhD/src/prias/Rdata/decision_analytic/DRE_PSA/thresholdsList.Rdata")
+# load("/home/a_tomer/Google Drive/PhD/src/prias/Rdata/decision_analytic/Simulation/scheduleResCombined.Rdata")
+# levels(scheduleResCombined$methodName)[5] = "Risk: Dynamic"
+# scheduleResCombined = scheduleResCombined[scheduleResCombined$methodName!=levels(scheduleResCombined$methodName)[6],]
+# scheduleResCombined$methodName = droplevels(scheduleResCombined$methodName)
 
-print("Loaded Rdata")
+load("appdata.Rdata")
+print("Loaded data necessary to run the app")
 
 THEME_COLOR = "#04A4DC"
 LEGEND_POSITION = list(orientation = "h", y=1.125, x=0.4)
@@ -211,29 +212,33 @@ getSurvThreshold = function(lastBiopsyTime, curVisitTime){
 
 riskColumnGraph = function(data, curVisitTime, riskThreshold, meanRiskProb, firstVisitDom){
   if(meanRiskProb >= riskThreshold){
-    fillColor = "red"
+    fillColor = "red3"
   }else{
-    fillColor = "green"
+    fillColor = "forestgreen"
   }
   
   xlabel = format(as.POSIXct(curVisitTime * 365 * 24 * 60 * 60 + data$dom[1], origin = "1582-10-14"),
                   format = "%b %e, %Y")
   
   plot = ggplot() + geom_col(aes(x=c(xlabel,xlabel), y=c(meanRiskProb, 1-meanRiskProb)),
-                                 fill=c(fillColor, "white"), color='black', width = 0.2) + 
-    scale_y_continuous(breaks=seq(0,1, length.out = 11), labels=paste0(seq(0,1, length.out = 11)*100, "%"),
-                       limits=c(0,1), position = "left") + theme_bw() + 
+                                 fill=c(fillColor, "white"), color=fillColor, width = 0.2) + 
+    scale_y_continuous(breaks=c(0, 0.25, 0.5, 0.75, 1), labels=c("0%", "25%", "50%", "75%", "100%"),
+                       limits=c(0,1), sec.axis = dup_axis(trans = ~.,
+                                                          breaks = riskThreshold,
+                                                          labels = paste0(round(riskThreshold*100,2), "%\n(Biopsy threshold)"))) + 
+                         theme_bw() + 
+    geom_label(aes(x=xlabel, y=0.75, 
+                   label=paste0("Current risk\n", round(meanRiskProb * 100,2), "%")),
+               color = fillColor, size=5)+
     theme(legend.position = "top", text = element_text(size = 20),
+          axis.text.y.right = element_text(color = "firebrick1"),
+          axis.title.y.right = element_blank(),
+          panel.grid.minor = element_blank(),
           plot.title = element_text(hjust = 0.5, color=fillColor)) + 
+    geom_segment(aes(x=-Inf, xend=Inf, y=riskThreshold, yend=riskThreshold), 
+                 linetype="dashed", color="firebrick1", size=0.5) +
     xlab("") +
-    ylab("Risk of cancer progression (%)") +
-    ggtitle(paste0("Current risk: ", round(meanRiskProb * 100,2), "%"))
-  
-  plot = plot + geom_hline(aes(yintercept = riskThreshold, 
-                               linetype=paste0('Maximum acceptable risk of \ncancer progression: ', round(riskThreshold,2)*100, "%")), 
-                           color='black') + 
-    scale_linetype_manual(name="", values = "dashed")
-  
+    ylab("Risk of cancer progression (%)")
   return(plot)
 }
 
@@ -253,8 +258,8 @@ summaryGraph = function(data, curVisitTime=10,
   sfit = survfitJM(mvJoint_dre_psa_dre_value_light, patientDs, idVar="P_ID", 
                    survTimes = curVisitTime, last.time = lastBiopsyTime)
   
-  patientDs$fitted_high_dre_prob = plogis(sfit$fitted.y[[1]]$high_dre)
-  patientDs$fitted_log2psaplus1 = sfit$fitted.y[[1]]$log2psaplus1
+  patientDs$fitted_high_dre_prob = plogis(sfit$fitted.y[[1]]$high_dre)[1:nrow(patientDs)]
+  patientDs$fitted_log2psaplus1 = sfit$fitted.y[[1]]$log2psaplus1[1:nrow(patientDs)]
   
   #The base of axes in this plot is of DRE
   minYLeft = 0
@@ -272,50 +277,40 @@ summaryGraph = function(data, curVisitTime=10,
   curVisitDate = format(as.POSIXct(curVisitTime * 365 * 24 * 60 * 60 + data$dom[1], origin = "1582-10-14"),
                         format = "%b %e, %Y")
   
-  if(curVisitTime - max(data$visitTimeYears) > 1.5){
-    curVisitTimeTick = curVisitTime
-  }else{
-    curVisitTimeTick = max(data$visitTimeYears) + 1
-  }
+  col_width = curVisitTime * 0.1
   
-  if(curVisitTimeTick<5){
-    col_width = 0.5
-  }else{
-    col_width = 1
-  }
-  
-  xTicks = seq(0, max(data$visitTimeYears), length.out = 6)
+  xTicks = seq(0, curVisitTime, length.out = 6)
   xTicks = xTicks[abs(xTicks - lastBiopsyTime) >= 0.5]
-  xTicks = c(xTicks, lastBiopsyTime, curVisitTimeTick)
+  xTicks = xTicks[abs(xTicks - curVisitTime) >= 0.5]
+  xTicks = c(xTicks, lastBiopsyTime, curVisitTime)
   xLabels = round(xTicks,1)
   xLabels[length(xLabels)-1] = paste0(round(lastBiopsyTime,2), "\n(Latest biopsy)")
   xLabels[length(xLabels)] = paste0(round(curVisitTime,2), "\n(Today: ", curVisitDate, ")")
   
-  xLabelColors = c(rep("black", length(xTicks)-1), "red")
+  xLabelColors = c(rep("black", length(xTicks)-1), "red3")
   
-  p=ggplot() +
+  p=ggplot() + geom_col(aes(x=c(curVisitTime,curVisitTime), y=c(maxMeanRiskScaled, maxYleft-maxMeanRiskScaled)), 
+                       fill=c("red3", "white"),  color=c('red3'), width = col_width) +
     geom_vline(xintercept = lastBiopsyTime, linetype="solid") +
     geom_line(data = psaDs, aes(x = visitTimeYears, y=fitted_log2psaplus1, linetype="Fitted PSA")) +
     geom_point(data = psaDs, size=POINT_SIZE, aes(x = visitTimeYears, y=log2psaplus1, shape="Observed PSA", color="Observed PSA")) +
     geom_line(data = patientDs, aes(x = visitTimeYears, y=fitted_high_dre_prob, linetype="Fitted DRE")) +
     geom_point(data = patientDs, size=POINT_SIZE, aes(x = visitTimeYears, y=high_dre, shape="Observed DRE", color="Observed DRE")) +
-    geom_col(aes(x=c(curVisitTimeTick,curVisitTimeTick), y=c(maxMeanRiskScaled, maxYleft-maxMeanRiskScaled)), 
-             fill=c("red", "white"),  color=c('black'), width = col_width) + 
     geom_segment(aes(x=-Inf, xend=lastBiopsyTime, y=maxYleft/2, yend=maxYleft/2), 
                  linetype="solid", color="gray", size=1) +
-    geom_text(aes(x=curVisitTimeTick, y=maxYleft - 0.5, 
+    geom_label(aes(x=curVisitTime, y=maxYleft - 0.5, 
                   label=paste0("Current risk\n", round(meanRiskProb * 100,2), "%")),
-              color = "red", size=6)+
+              color = "red3", size=6)+
     xlab("Follow-up time (years)") + 
     ylab(expression('Pr (DRE > T1c)            '*'log'[2]*'(PSA + 1)')) +
     scale_linetype_manual(name="",
                           labels= c("Fitted Pr (DRE > T1c)", expression('Fitted log'[2]*'(PSA + 1)')),
                           values = c("dotted", "dashed")) +       
     scale_shape_manual(name="",
-                       labels=c("Observed DRE", expression('Observed log'[2]*'(PSA + 1)')),
+                       labels=c("Observed DRE (T1c / above T1c)", expression('Observed log'[2]*'(PSA + 1)')),
                        values = c(17,16)) + 
     scale_color_manual(name="",
-                       labels=c("Observed DRE", expression('Observed log'[2]*'(PSA + 1)')),
+                       labels=c("Observed DRE (T1c / above T1c)", expression('Observed log'[2]*'(PSA + 1)')),
                        values = c("darkorchid", THEME_COLOR)) + 
     theme_bw() + 
     theme(text = element_text(size=FONT_SIZE), axis.text=element_text(size=FONT_SIZE),
@@ -323,12 +318,12 @@ summaryGraph = function(data, curVisitTime=10,
           panel.grid.minor = element_blank(),
           axis.text.y = element_text(size=FONT_SIZE, color = rep(c("darkorchid", THEME_COLOR), each=4)),
           axis.title.y = element_text(size=FONT_SIZE, color = "black"),
-          axis.title.y.right = element_text(size=FONT_SIZE, color = "red"),
-          axis.text.y.right = element_text(size=FONT_SIZE, color = "red"),
+          axis.title.y.right = element_text(size=FONT_SIZE, color = "red3"),
+          axis.text.y.right = element_text(size=FONT_SIZE, color = "red3"),
           axis.text.x = element_text(size=FONT_SIZE, color=xLabelColors),
           legend.background = element_blank(), legend.position = "top",
           legend.text = element_text(size=FONT_SIZE-3))  +
-    scale_x_continuous(breaks=xTicks, labels = xLabels, limits = c(0, curVisitTimeTick + col_width)) +
+    scale_x_continuous(breaks=xTicks, labels = xLabels, limits = c(0, curVisitTime + col_width)) +
     scale_y_continuous(limits = c(minYLeft, maxYleft), 
                        breaks = c(seq(0, maxYleft/2 - DRE_PSA_Y_GAP, length.out = 4), seq(maxYleft/2 + DRE_PSA_Y_GAP, maxYleft, length.out = 4)),
                        labels = c(paste0(round(seq(0, 1, length.out = 4),2) * 100, "%"), 

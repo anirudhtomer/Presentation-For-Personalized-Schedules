@@ -85,7 +85,7 @@ shinyUI(fluidPage(
                                              "No" = "No"),
                                  selected="Yes", inline=T),
                     radioButtons("risk_choice_biopsy",
-                                 "Choose the maximum risk of cancer progression you/patient are willing to accept?",
+                                 "Choose the maximum risk of cancer progression (biopsy threshold) you/patient are willing to accept?",
                                  choices = c("Dynamic risk based on PRIAS dataset"="AUTO", "5%"="5_PERC", "15%" = "15_PERC"),
                                  selected="AUTO", inline=T),
                     tags$span(id="impact_check_msg","Please check the impact (graphs below) of each risk threshold, before making a selection."),
