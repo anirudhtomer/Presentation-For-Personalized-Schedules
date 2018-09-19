@@ -2,14 +2,15 @@
 # load("/home/a_tomer/Google Drive/PhD/src/prias/Rdata/decision_analytic/DRE_PSA/mvJoint_dre_psa_dre_value_light.Rdata")
 # load("/home/a_tomer/Google Drive/PhD/src/prias/Rdata/decision_analytic/DRE_PSA/thresholdsList.Rdata")
 # load("/home/a_tomer/Google Drive/PhD/src/prias/Rdata/decision_analytic/Simulation/scheduleResCombined.Rdata")
-# levels(scheduleResCombined$methodName)[5] = "Risk: Dynamic"
-# scheduleResCombined = scheduleResCombined[scheduleResCombined$methodName!=levels(scheduleResCombined$methodName)[6],]
+# levels(scheduleResCombined$methodName)[6] = "Risk: Dynamic"
+# scheduleResCombined = scheduleResCombined[scheduleResCombined$methodName!=levels(scheduleResCombined$methodName)[5],]
 # scheduleResCombined$methodName = droplevels(scheduleResCombined$methodName)
 
 load("appdata.Rdata")
 print("Loaded data necessary to run the app")
 
-THEME_COLOR = "#04A4DC"
+THEME_COLOR = "dodgerblue1"
+THEME_COLOR_DARK = "dodgerblue4"
 LEGEND_POSITION = list(orientation = "h", y=1.125, x=0.4)
 
 getBoxplotStatsDf=function(progression_time_low, progression_time_high, attribute){
@@ -23,76 +24,147 @@ getBoxplotStatsDf=function(progression_time_low, progression_time_high, attribut
   return(resDf)
 }
 
-psaObsDataGraph = function(data){
+psaObsDataGraph = function(data, FONT_SIZE=15, POINT_SIZE=4){
   data$Date = c(sapply(1:nrow(data), function(index){
     paste0(format(as.POSIXct(data$dom[index], origin = "1582-10-14"), format = "%b %e, %Y"),
            "\nYears since diagnosis: ", round(data$visitTimeYears[index],2), 
            " years\nPSA: ", data$psa[index], " ng/mL")
   }))
   
+  max_psa_val = max(data$psa, na.rm = T)
+  last_biomarker_time = max(data$visitTimeYears[!is.na(data$psa) | !is.na(data$dre)])
+  last_psa_val = tail(data$psa[!is.na(data$psa)],1)
+  
+  ybreaks = pretty(seq(0, max_psa_val, length.out = 4), n = 4)
+  
+  curVisitLabelYPosition = max(ybreaks) * 0.1
+  curVisitLabelXPosition = max(0.1 * 10, last_biomarker_time)
+  
+  repeat{
+    #10% space at least
+    if(abs(last_psa_val - curVisitLabelYPosition)/max(ybreaks) > 0.1){
+      break
+    }
+    curVisitLabelYPosition = curVisitLabelYPosition + 0.5
+  }
+  
+  minY = - 0.1 * max(ybreaks)
+  maxy = max(max(ybreaks), curVisitLabelYPosition + 1)
+  
   plot = ggplot() + 
-    geom_point(data=data[!is.na(data$psa),], aes(x=visitTimeYears, y=psa, label=Date), color=THEME_COLOR, size=3) +
-    geom_line(data=data[!is.na(data$psa),], aes(x=visitTimeYears, y=psa), color=THEME_COLOR) + 
-    geom_vline(aes(xintercept = data$visitTimeYears[!is.na(data$gleason)], 
-                   linetype="Older biopsies")) +
+    geom_segment(aes(x = data$visitTimeYears[!is.na(data$gleason)],
+                     xend = data$visitTimeYears[!is.na(data$gleason)],
+                     y = -Inf, yend = 0,
+                     linetype="Older biopsies"), size=0.7) +
+    geom_segment(aes(x=last_biomarker_time, xend=last_biomarker_time, y=0, yend=Inf), 
+                 linetype="twodash", color=THEME_COLOR_DARK, size=0.7)+
+    geom_label(aes(x=curVisitLabelXPosition, y=curVisitLabelYPosition, 
+                   label=paste0("Current visit\n", round(last_biomarker_time,1), " years")), 
+               size=6, color=THEME_COLOR_DARK) +
+    geom_hline(yintercept = 0, color="grey60") + 
+    geom_point(data=data[!is.na(data$psa),], aes(x=visitTimeYears, y=psa, label=Date), color=THEME_COLOR, size=POINT_SIZE) +
+    geom_line(data=data[!is.na(data$psa),], aes(x=visitTimeYears, y=psa), color=THEME_COLOR, alpha=0.3) + 
     scale_linetype_manual(name="", values="dotted") +
-    theme_bw()+ 
-    theme(legend.position = "top") + 
+    theme_bw() + 
+    theme(axis.text = element_text(size = FONT_SIZE),
+          axis.title = element_text(size = FONT_SIZE),
+          legend.text = element_text(size = FONT_SIZE - 2),
+      legend.position = "bottom", legend.direction = "horizontal") + 
+    xlim(0, max(10, last_biomarker_time + 1)) + 
+    scale_y_continuous(breaks = ybreaks, limits = c(minY, maxy)) + 
     xlab("Follow-up time (years)") + 
     ylab("Observed PSA (ng/mL)")
   return(plot)
 }
 
-dreObsDataGraph = function(data){
+dreObsDataGraph = function(data, FONT_SIZE=15, POINT_SIZE=4){
   data$Date = c(sapply(1:nrow(data), function(index){
     paste0(format(as.POSIXct(data$dom[index], origin = "1582-10-14"), format = "%b %e, %Y"),
            "\nYears since diagnosis: ", round(data$visitTimeYears[index],2), 
            " years\nDRE: ", data$dre[index])
   }))
   
+  dreTimes = data$visitTimeYears[!is.na(data$dre)]
+  dreValues = as.numeric(data$dre[!is.na(data$dre)]) + 1
+  
+  ybreaks = min(dreValues):max(dreValues)
+  ylabels = levels(data$dre[!is.na(data$dre)])
+  minY = - 0.1 * max(ybreaks)
+  
+  last_biomarker_time = max(data$visitTimeYears[!is.na(data$psa) | !is.na(data$dre)])
+  curVisitLabelYPosition = (max(ybreaks) + 1) * 0.1
+  
   plot = ggplot() + 
-    geom_point(data=data[!is.na(data$dre),], aes(x=visitTimeYears, y=dre, label=Date), color=THEME_COLOR, shape=17, size=3) +
-    geom_vline(aes(xintercept = data$visitTimeYears[!is.na(data$gleason)], 
-                   linetype="Older biopsies")) +
     scale_linetype_manual(name="", values="dotted") +
+    geom_segment(aes(x=last_biomarker_time, xend=last_biomarker_time, y=0, yend=Inf), 
+                 linetype="twodash", color=THEME_COLOR_DARK, size=0.7)+
+    geom_label(aes(x=last_biomarker_time, y=curVisitLabelYPosition, 
+                   label=paste0("Current visit\n", round(last_biomarker_time,1), " years")), 
+               size=6, color=THEME_COLOR_DARK) +
+    geom_hline(yintercept = 0, color="grey60") + 
+    geom_point(aes(x=dreTimes, y=dreValues), 
+               color="darkorchid", shape=17, size=POINT_SIZE) +
+    geom_segment(aes(x = data$visitTimeYears[!is.na(data$gleason)],
+                     xend = data$visitTimeYears[!is.na(data$gleason)],
+                     y = -Inf, yend = 0,
+                     linetype="Older biopsies"), size=0.7) +
     theme_bw()+ 
+    theme(axis.text = element_text(size = FONT_SIZE),
+          axis.title = element_text(size = FONT_SIZE),
+          legend.text = element_text(size = FONT_SIZE - 2),
+          legend.position = "bottom", legend.direction = "horizontal") + 
+    scale_y_continuous(breaks = ybreaks, labels = ylabels, limits = c(minY, max(ybreaks)+1)) + 
+    xlim(0,10) +
     xlab("Follow-up time (years)") + ylab("Observed DRE")
   return(plot)
 }
 
 psaPredictionGraph = function(data, FONT_SIZE=12, POINT_SIZE = 2){
-  maxBiomarkerTime = max(data$visitTimeYears[!is.na(data$psa)])
+  last_biomarker_time = max(data$visitTimeYears[!is.na(data$psa) | !is.na(data$dre)])
+  max_x_time = max(data$visitTimeYears, na.rm = T)
   
-  futureTimes = seq(0, 10, by = 0.1)
+  futureTimes = seq(0, max_x_time + 1, length.out = 40)
   predictedPSA_DRE = predictPSADRE(mvJoint_dre_psa_dre_value_light, data, idVar = "P_ID", survTimes = futureTimes)
   
   meanPredictedLog2psaplus1 = apply(predictedPSA_DRE$trueLog2psaplus1, MARGIN = 1, mean)
   lower95 = apply(predictedPSA_DRE$trueLog2psaplus1, MARGIN = 1, quantile, probs=0.025)
   upper95 = apply(predictedPSA_DRE$trueLog2psaplus1, MARGIN = 1, quantile, probs=0.975)
   
+  max_psa_val = max(data$log2psaplus1, meanPredictedLog2psaplus1, na.rm = T)
+  ybreaks = pretty(seq(0, max_psa_val, length.out = 4), n = 4)
+  minY = - 0.1 * max(ybreaks)
+  
   predictionData = data.frame(visitTimeYears = futureTimes, 
                               meanPredictedLog2psaplus1, lower95, upper95)
   
   plot = ggplot() + 
     geom_point(data=data[!is.na(data$psa),], aes(x=visitTimeYears, y=log2psaplus1), color=THEME_COLOR, size=POINT_SIZE) +
-    geom_line(data=predictionData[predictionData$visitTimeYears<=maxBiomarkerTime,], aes(x=visitTimeYears, y=meanPredictedLog2psaplus1, linetype="Fitted")) +
-    geom_vline(aes(xintercept = data$visitTimeYears[!is.na(data$gleason)], 
-                   linetype="Older biopsies"), show.legend=FALSE) +
+    geom_line(data=predictionData[predictionData$visitTimeYears<=last_biomarker_time,],
+              aes(x=visitTimeYears, y=meanPredictedLog2psaplus1, linetype="Underlying profile"), size=0.7) +
+    geom_segment(aes(x = data$visitTimeYears[!is.na(data$gleason)],
+                     xend = data$visitTimeYears[!is.na(data$gleason)], y = -Inf, yend=0,
+                   linetype="Older biopsies"), show.legend=FALSE, size=0.7) +
+    geom_hline(yintercept = 0, color="grey60") + 
     scale_linetype_manual(name="",
-                          values=c("dashed", "dotted")) +
+                          labels=c("Older biopsies", expression('Underlying log'[2]*'(PSA + 1) profile')),
+                          values=c("dotted", "dashed")) +
     theme_bw()+ 
     theme(text = element_text(size=FONT_SIZE),
-          legend.background = element_blank(), legend.position = "top",
-          legend.text = element_text(size=FONT_SIZE-3))  +
+          legend.background = element_blank(), 
+          legend.text = element_text(size = FONT_SIZE - 2),
+          legend.position = "bottom", legend.direction = "horizontal") + 
+    scale_y_continuous(breaks = ybreaks, limits = c(minY,  max(ybreaks))) + 
     xlab("Follow-up time (years)") + 
+    xlim(0, max_x_time) + 
     ylab(expression('log'[2]*'(PSA + 1)')) 
   return(plot)
 }
 
 psaVelocityGraph = function(data, FONT_SIZE=12, POINT_SIZE = 2){
-  maxBiomarkerTime = max(data$visitTimeYears[!is.na(data$psa)])
+  last_biomarker_time = max(data$visitTimeYears[!is.na(data$psa) | !is.na(data$dre)])
+  max_x_time = max(data$visitTimeYears, na.rm = T)
   
-  futureTimes = seq(0, 10, by = 0.1)
+  futureTimes = seq(0, max_x_time + 1, length.out = 40)
   predictedPSA_DRE = predictPSADRE(mvJoint_dre_psa_dre_value_light, data, idVar = "P_ID", survTimes = futureTimes)
   
   meanPredictedLog2psaplus1 = apply(predictedPSA_DRE$trueLog2psaplus1_velocity, MARGIN = 1, mean)
@@ -102,18 +174,29 @@ psaVelocityGraph = function(data, FONT_SIZE=12, POINT_SIZE = 2){
   predictionData = data.frame(visitTimeYears = futureTimes, 
                               meanPredictedLog2psaplus1, lower95, upper95)
   
+  ybreaks = pretty(seq(min(meanPredictedLog2psaplus1), max(meanPredictedLog2psaplus1), length.out = 4), n = 4)
+  minY = min(ybreaks) - 0.1 * (max(ybreaks) - min(ybreaks))
+  
   plot = ggplot() + 
-    geom_line(data=predictionData[predictionData$visitTimeYears<=maxBiomarkerTime,], aes(x=visitTimeYears, y=meanPredictedLog2psaplus1, linetype="Fitted")) +
-    geom_vline(aes(xintercept = data$visitTimeYears[!is.na(data$gleason)], 
-                   linetype="Older biopsies"), show.legend=FALSE) +
-    scale_linetype_manual(name="",
-                          values=c("solid", "dotted")) +
+    geom_line(data=predictionData[predictionData$visitTimeYears<=last_biomarker_time,], 
+              aes(x=visitTimeYears, y=meanPredictedLog2psaplus1, linetype="Underlying velocity")) +
+    geom_segment(aes(x = data$visitTimeYears[!is.na(data$gleason)],
+                     xend = data$visitTimeYears[!is.na(data$gleason)], 
+                     y = -Inf, yend=min(ybreaks),
+                     linetype="Older biopsies"), show.legend=FALSE, size=0.7) +
+    geom_hline(yintercept = min(ybreaks), color="grey60") + 
+    scale_linetype_manual(name="", 
+                          labels=c("Older biopsies", expression('Underlying log'[2]*'(PSA + 1) velocity')),
+                          values=c("dotted", "solid")) +
     theme_bw()+ 
     theme(text = element_text(size=FONT_SIZE),
-          legend.background = element_blank(), legend.position = "top",
-          legend.text = element_text(size=FONT_SIZE-3))  +
+          legend.background = element_blank(), legend.position = "bottom",
+          legend.direction = "horizontal",
+          legend.text = element_text(size=FONT_SIZE-2))  +
+    scale_y_continuous(breaks=ybreaks, limits=c(minY, max(ybreaks)))+
     xlab("Follow-up time (years)") + 
-    ylab(expression('Rate of change (velocity) of log'[2]*'(PSA + 1)')) 
+    xlim(0, max_x_time) + 
+    ylab(expression('Velocity of log'[2]*'(PSA + 1)')) 
   return(plot)
 }
 
@@ -184,8 +267,8 @@ riskPredictionGraph = function(data){
 
 getSurvThreshold = function(lastBiopsyTime, curVisitTime){
   riskMethodName = "F1score"
-  #Dt = curVisitTime - lastBiopsyTime
-  Dt = 0.5
+  Dt = curVisitTime - lastBiopsyTime
+  #Dt = 0.5
   
   availableDt = as.numeric(names(thresholdsList))
   Dt = availableDt[which.min(abs(Dt-availableDt))]
@@ -219,6 +302,7 @@ riskColumnGraph = function(data, curVisitTime, riskThreshold, meanRiskProb, firs
   
   xlabel = format(as.POSIXct(curVisitTime * 365 * 24 * 60 * 60 + data$dom[1], origin = "1582-10-14"),
                   format = "%b %e, %Y")
+  xlabel = paste0(xlabel, "\n(", round(curVisitTime,1), " years since diagnosis)")
   
   plot = ggplot() + geom_col(aes(x=c(xlabel,xlabel), y=c(meanRiskProb, 1-meanRiskProb)),
                                  fill=c(fillColor, "white"), color=fillColor, width = 0.2) + 
@@ -228,7 +312,7 @@ riskColumnGraph = function(data, curVisitTime, riskThreshold, meanRiskProb, firs
                                                           labels = paste0(round(riskThreshold*100,2), "%\n(Biopsy threshold)"))) + 
                          theme_bw() + 
     geom_label(aes(x=xlabel, y=0.75, 
-                   label=paste0("Current risk\n", round(meanRiskProb * 100,2), "%")),
+                   label=paste0("Current risk\n", round(meanRiskProb * 100,2), "%\n")),
                color = fillColor, size=5)+
     theme(legend.position = "top", text = element_text(size = 20),
           axis.text.y.right = element_text(color = "firebrick1"),
@@ -242,96 +326,96 @@ riskColumnGraph = function(data, curVisitTime, riskThreshold, meanRiskProb, firs
   return(plot)
 }
 
-summaryGraph = function(data, curVisitTime=10, 
+summaryGraph = function(data, curVisitTime=10, lastBiopsyTime,
                         FONT_SIZE=12, POINT_SIZE = 2, DRE_PSA_Y_GAP=0.1){
-  patientDs =  data[!(is.na(data$dre) & is.na(data$psa)),]
-  
-  lastBiopsyTime = max(data$visitTimeYears[!is.na(data$gleason)])
-  
-  meanRiskProb = NA
-  
-  if(curVisitTime == lastBiopsyTime){
-    meanRiskProb = 0
-    curVisitTime = curVisitTime + 0.1
-  }
-  
-  sfit = survfitJM(mvJoint_dre_psa_dre_value_light, patientDs, idVar="P_ID", 
-                   survTimes = curVisitTime, last.time = lastBiopsyTime)
-  
-  patientDs$fitted_high_dre_prob = plogis(sfit$fitted.y[[1]]$high_dre)[1:nrow(patientDs)]
-  patientDs$fitted_log2psaplus1 = sfit$fitted.y[[1]]$log2psaplus1[1:nrow(patientDs)]
-  
-  #The base of axes in this plot is of DRE
-  minYLeft = 0
-  maxYleft = 2 + DRE_PSA_Y_GAP * 2
-  
-  psaDs = patientDs[, c("visitTimeYears", "log2psaplus1", "fitted_log2psaplus1")]
-  maxPSA = max(psaDs[,-1], na.rm=T)
-  psaDs[,-1] = psaDs[,-1] / maxPSA + maxYleft/2 + DRE_PSA_Y_GAP
-  
-  if(is.na(meanRiskProb)){
-    meanRiskProb = 1 - sfit$summaries[[1]][, "Mean"]
-  }
-  maxMeanRiskScaled = meanRiskProb * (maxYleft - minYLeft) + minYLeft
   
   curVisitDate = format(as.POSIXct(curVisitTime * 365 * 24 * 60 * 60 + data$dom[1], origin = "1582-10-14"),
                         format = "%b %e, %Y")
   
-  col_width = curVisitTime * 0.1
+  patientDs =  data[!(is.na(data$dre) & is.na(data$psa)),]
   
-  xTicks = seq(0, curVisitTime, length.out = 6)
-  xTicks = xTicks[abs(xTicks - lastBiopsyTime) >= 0.5]
-  xTicks = xTicks[abs(xTicks - curVisitTime) >= 0.5]
-  xTicks = c(xTicks, lastBiopsyTime, curVisitTime)
-  xLabels = round(xTicks,1)
-  xLabels[length(xLabels)-1] = paste0(round(lastBiopsyTime,2), "\n(Latest biopsy)")
-  xLabels[length(xLabels)] = paste0(round(curVisitTime,2), "\n(Today: ", curVisitDate, ")")
+  sfit = survfitJM(mvJoint_dre_psa_dre_value_light, patientDs, idVar="P_ID", 
+                   survTimes = curVisitTime, last.time = lastBiopsyTime)
   
-  xLabelColors = c(rep("black", length(xTicks)-1), "red3")
+  meanRiskProb = 1 - sfit$summaries[[1]][, "Mean"]
   
-  p=ggplot() + geom_col(aes(x=c(curVisitTime,curVisitTime), y=c(maxMeanRiskScaled, maxYleft-maxMeanRiskScaled)), 
-                       fill=c("red3", "white"),  color=c('red3'), width = col_width) +
-    geom_vline(xintercept = lastBiopsyTime, linetype="solid") +
-    geom_line(data = psaDs, aes(x = visitTimeYears, y=fitted_log2psaplus1, linetype="Fitted PSA")) +
+  patientDs$fitted_high_dre_prob = plogis(sfit$fitted.y[[1]]$high_dre)[1:nrow(patientDs)]
+  patientDs$fitted_log2psaplus1 = sfit$fitted.y[[1]]$log2psaplus1[1:nrow(patientDs)]
+  
+  psaDs = patientDs[, c("visitTimeYears", "log2psaplus1", "fitted_log2psaplus1")]
+  
+  maxPSA = max(psaDs[,-1], na.rm=T)
+  minPSA = min(psaDs[,-1], na.rm = T)
+  
+  #real PSA, and fake DRE values
+  psaPlot = ggplot() + 
+    geom_vline(aes(xintercept = lastBiopsyTime, linetype="Latest biopsy"), show.legend = F, size=0.7) +
+    geom_vline(aes(xintercept = curVisitTime), show.legend = F, color=THEME_COLOR_DARK, linetype="twodash", size=0.7) +
+    geom_point(aes(x = 0, y=900, shape="Observed DRE", color="Observed DRE")) +
+    geom_line(aes(x = 0, y=900, linetype="Fitted")) +
+    geom_label(aes(x=curVisitTime, y=0.5, 
+                   label=paste0("Current visit\n", round(curVisitTime,1), " years")), 
+               size=5, color=THEME_COLOR_DARK) +
+    geom_line(data = psaDs, aes(x = visitTimeYears, y=fitted_log2psaplus1, linetype="Fitted")) +
     geom_point(data = psaDs, size=POINT_SIZE, aes(x = visitTimeYears, y=log2psaplus1, shape="Observed PSA", color="Observed PSA")) +
-    geom_line(data = patientDs, aes(x = visitTimeYears, y=fitted_high_dre_prob, linetype="Fitted DRE")) +
-    geom_point(data = patientDs, size=POINT_SIZE, aes(x = visitTimeYears, y=high_dre, shape="Observed DRE", color="Observed DRE")) +
-    geom_segment(aes(x=-Inf, xend=lastBiopsyTime, y=maxYleft/2, yend=maxYleft/2), 
-                 linetype="solid", color="gray", size=1) +
-    geom_label(aes(x=curVisitTime, y=maxYleft - 0.5, 
-                  label=paste0("Current risk\n", round(meanRiskProb * 100,2), "%")),
-              color = "red3", size=6)+
-    xlab("Follow-up time (years)") + 
-    ylab(expression('Pr (DRE > T1c)            '*'log'[2]*'(PSA + 1)')) +
     scale_linetype_manual(name="",
-                          labels= c("Fitted Pr (DRE > T1c)", expression('Fitted log'[2]*'(PSA + 1)')),
-                          values = c("dotted", "dashed")) +       
+                          labels= c(expression(atop('Underlying log'[2]*'(PSA + 1)',  'Underlying Pr (DRE > T1c)')), "Latest biopsy"),
+                          values = c("dashed", "dotted")) +       
     scale_shape_manual(name="",
                        labels=c("Observed DRE (T1c / above T1c)", expression('Observed log'[2]*'(PSA + 1)')),
                        values = c(17,16)) + 
     scale_color_manual(name="",
                        labels=c("Observed DRE (T1c / above T1c)", expression('Observed log'[2]*'(PSA + 1)')),
                        values = c("darkorchid", THEME_COLOR)) + 
+    ylab(expression('log'[2]*'(PSA + 1)')) + 
+    ylim(0, maxPSA) +
+    xlim(0, curVisitTime + curVisitTime * 0.1) + 
+    xlab("Follow-up time (years)") + 
     theme_bw() + 
-    theme(text = element_text(size=FONT_SIZE), axis.text=element_text(size=FONT_SIZE),
+    theme(text = element_text(size=FONT_SIZE), 
           axis.line = element_line(),
-          panel.grid.minor = element_blank(),
-          axis.text.y = element_text(size=FONT_SIZE, color = rep(c("darkorchid", THEME_COLOR), each=4)),
-          axis.title.y = element_text(size=FONT_SIZE, color = "black"),
-          axis.title.y.right = element_text(size=FONT_SIZE, color = "red3"),
-          axis.text.y.right = element_text(size=FONT_SIZE, color = "red3"),
-          axis.text.x = element_text(size=FONT_SIZE, color=xLabelColors),
-          legend.background = element_blank(), legend.position = "top",
-          legend.text = element_text(size=FONT_SIZE-3))  +
-    scale_x_continuous(breaks=xTicks, labels = xLabels, limits = c(0, curVisitTime + col_width)) +
-    scale_y_continuous(limits = c(minYLeft, maxYleft), 
-                       breaks = c(seq(0, maxYleft/2 - DRE_PSA_Y_GAP, length.out = 4), seq(maxYleft/2 + DRE_PSA_Y_GAP, maxYleft, length.out = 4)),
-                       labels = c(paste0(round(seq(0, 1, length.out = 4),2) * 100, "%"), 
-                                  round(seq(0, maxPSA, length.out = 4),2)), 
-                       sec.axis = sec_axis(~(.-minYLeft)/(maxYleft-minYLeft),
-                                           breaks = seq(0,1, length.out = 5),
-                                           labels = paste0(seq(0,1, length.out = 5)*100,"%"),
-                                           name = "Risk of cancer progression"))
+          legend.text = element_text(size = FONT_SIZE-4),
+          legend.position = "bottom", legend.direction = "horizontal",
+          plot.margin = margin(0, 5.5, 2, 5.5, "pt")) 
+  
+  drePlot = ggplot() + geom_vline(aes(xintercept = lastBiopsyTime), linetype="dotted", size=0.7) +
+    geom_vline(aes(xintercept = curVisitTime), show.legend = F, color=THEME_COLOR_DARK, linetype="twodash", size=0.7) +
+    geom_label(aes(x=curVisitTime, y=0.5, 
+                   label=paste0("Current visit\n", round(curVisitTime,1), " years")), 
+               size=5, color=THEME_COLOR_DARK) +
+    geom_line(data = patientDs, aes(x = visitTimeYears, y=fitted_high_dre_prob), linetype="dashed") +
+    geom_point(data = patientDs, size=POINT_SIZE, aes(x = visitTimeYears, y=high_dre), shape=17, color="darkorchid") +
+    ylab("Pr (DRE > T1c)") + 
+    scale_y_continuous(breaks = seq(0,1, length.out = 3), 
+                       labels=paste0(seq(0,1,length.out = 3)*100, "%"), limits = c(0,1)) +
+    xlim(0, curVisitTime + curVisitTime * 0.1) + 
+    theme_bw() + 
+    theme(text = element_text(size=FONT_SIZE), 
+          axis.line = element_line(),
+          axis.ticks.x = element_blank(), 
+          axis.title.x = element_blank(), 
+          axis.text.x = element_blank(), 
+          legend.position = "none",
+          plot.margin = margin(0, 5.5, 0, 5.5, "pt")) 
+  
+  riskGaugeLabel = paste0("Risk of cancer progression on current visit \n", curVisitDate, " (", round(curVisitTime,1)," years)")
+  riskGauge = ggplot(data = NULL, 
+                     aes(ymax = meanRiskProb, ymin = 0, xmax = 2, xmin = 1, fill="Risk")) +
+    geom_rect(aes(ymax=1, ymin=0, xmax=2, xmin=1), fill ="white", color="red3") +
+    geom_rect() +
+    scale_fill_manual("", values="red3") +
+    coord_polar(theta = "y",start=-pi/2) + xlim(c(0, 2)) + ylim(c(0,2)) +
+    geom_text(aes(x = 0, y = 0, label = paste0(round(meanRiskProb*100,2),"%")), color='red3', size=6) +
+    geom_text(aes(x=0.5, y=1.5, label = riskGaugeLabel), size=6, color="red3") +
+    theme_void() +
+    theme(strip.background = element_blank(),
+          strip.text.x = element_blank()) +
+    guides(fill=FALSE) +
+    guides(colour=FALSE)
+  
+  p=ggpubr::ggarrange(drePlot, psaPlot, nrow=2, ncol=1, heights = c(0.7,1),
+                      align = "v")
+  p=ggpubr::ggarrange(p, riskGauge, nrow=1, ncol=2, widths = c(1.75,1))
   
   return(p)
 }

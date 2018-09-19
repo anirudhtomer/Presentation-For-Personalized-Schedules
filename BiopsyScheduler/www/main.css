@@ -30,3 +30,13 @@
   text-align: justify;
   text-justify: inter-word;
 }
+
+#biopsy_threshold_reason_title{
+  color: black;
+  font-size: 18px;
+}
+
+#biopsy_threshold_reason{
+  text-align: justify;
+  text-justify: inter-word;
+}

@@ -32,7 +32,7 @@ shinyServer(function(input, output, session) {
       return(NULL)
     
     data = read.csv(inFile$datapath, header=TRUE, dec = input$dec,
-             sep = input$sep, quote = input$quote)
+                    sep = input$sep, quote = input$quote)
     
     dataToShow = data[1, ]
     dataToShow$lastBiopsyDate = format(as.POSIXct(max(data$dom[!is.na(data$gleason)]), origin = "1582-10-14"), format = "%b %e, %Y")
@@ -47,7 +47,7 @@ shinyServer(function(input, output, session) {
     return(dataToShow)
   })
   
-  output$graph_obs_psa <- renderPlotly({
+  output$graph_obs_psa <- renderPlot({
     # input$file1 will be NULL initially. After the user selects
     # and uploads a file, it will be a data frame with 'name',
     # 'size', 'type', and 'datapath' columns. The 'datapath'
@@ -63,16 +63,20 @@ shinyServer(function(input, output, session) {
     data = read.csv(inFile$datapath, header=TRUE, dec = input$dec,
                     sep = input$sep, quote = input$quote)
     
-    output$graph_obs_dre = renderPlotly({ggplotly(dreObsDataGraph(data), tooltip=c("label")) %>% 
-            config(displayModeBar = F) %>% 
-            layout(legend = LEGEND_POSITION)})
+    # output$graph_obs_dre = renderPlotly({ggplotly(dreObsDataGraph(data), tooltip=c("label")) %>% 
+    #         config(displayModeBar = F) %>% 
+    #         layout(legend = LEGEND_POSITION)})
     
-    print(ggplotly(psaObsDataGraph(data), tooltip=c("label")) %>% 
-            config(displayModeBar = F, mathjax = 'cdn') %>% 
-            layout(legend = LEGEND_POSITION))
+    # print(ggplotly(psaObsDataGraph(data), tooltip=c("label")) %>% 
+    #         config(displayModeBar = F, mathjax = 'cdn') %>% 
+    #         layout(legend = LEGEND_POSITION))
+    
+    output$graph_obs_dre = renderPlot(dreObsDataGraph(data))
+    
+    return(psaObsDataGraph(data))
   })
   
-   output$graph_prediction <- renderPlot({
+  output$graph_prediction <- renderPlot({
     inFile <- input$patientFile
     
     if (is.null(inFile))
@@ -84,24 +88,14 @@ shinyServer(function(input, output, session) {
     data$high_dre = ifelse(data$dre=="T1c", 0, 1)
     
     if(input$pred_type=="SUMMARY"){
-      currentDateTimeSeconds = as.numeric(Sys.time())
-      firstVisitDateTimeSeconds = as.numeric(as.POSIXct(data$dom[1], origin = "1582-10-14"))
+      curVisitTime = max(data$visitTimeYears[!is.na(data$psa) | !is.na(data$dre)])
+      lastBiopsyTime = max(data$visitTimeYears[!is.na(data$gleason)])
       
-      curVisitTime = (currentDateTimeSeconds - firstVisitDateTimeSeconds)/(365 * 24 * 60 * 60)
-      
-      if(curVisitTime > 10){
-        shinyalert("Cannot predict risk today", 
-                   paste0("We can only predict risk of cancer progression ",
-                          "for a period of 10 years since the beginning ",
-                          " of AS for a patient. The current date ",
-                          format(Sys.time(), format = "%b %e, %Y"), 
-                          " is more than 10 years since the first visit of the patient on ", 
-                          format(as.POSIXct(data$dom[1], origin = "1582-10-14"), format = "%b %e, %Y"), "."),
-                   type = "warning")
-        curVisitTime = 10
+      if(curVisitTime<=lastBiopsyTime){
+        curVisitTime = lastBiopsyTime + 0.1
       }
       
-      plot = summaryGraph(data, curVisitTime, FONT_SIZE=20, POINT_SIZE = 4, DRE_PSA_Y_GAP = 0.2)
+      plot = summaryGraph(data, curVisitTime, lastBiopsyTime, FONT_SIZE=20, POINT_SIZE = 4, DRE_PSA_Y_GAP = 0.2)
     }else if(input$pred_type=="PSA"){
       plot = psaPredictionGraph(data, FONT_SIZE=20, POINT_SIZE = 4)
     }else{
@@ -134,6 +128,29 @@ shinyServer(function(input, output, session) {
     }
   })
   
+  output$biopsy_threshold_reason = renderUI({
+    inFile <- input$patientFile
+    
+    if (is.null(inFile)){
+      return(NULL)
+    }
+    
+    if(input$risk_choice_biopsy=="5_PERC"){
+      reason = "Fixed biopsy threshold."
+    }else if(input$risk_choice_biopsy=="15_PERC"){
+      reason = "Fixed biopsy threshold."
+    }else{
+      reason = "The currently chosen biopsy threshold is a follow-up time dependent 
+risk threshold. Using information from the observed cancer progression times in 
+the PRIAS dataset, at a follow-up visit this threshold was chosen because it best discriminated
+between patients who obtain cancer progression versus others. We chose the well known F1 score as the discrimination index for this purpose.
+This is because the F1 score specifically focuses on identifying patients who may observe cancer progression by combining true positive rate, 
+and positive predictive value."
+    }
+    
+    return(HTML(reason))
+  })
+  
   output$graph_risk_now = renderPlot({
     inFile <- input$patientFile
     
@@ -149,28 +166,12 @@ shinyServer(function(input, output, session) {
     data$log2psaplus1 = log(data$psa + 1, base = 2)
     data$high_dre = ifelse(data$dre=="T1c", 0, 1)
     
-    currentDateTimeSeconds = as.numeric(Sys.time())
-    firstVisitDateTimeSeconds = as.numeric(as.POSIXct(data$dom[1], origin = "1582-10-14"))
-    
-    curVisitTime = (currentDateTimeSeconds - firstVisitDateTimeSeconds)/(365 * 24 * 60 * 60)
-    
-    if(curVisitTime > 10){
-      shinyalert("Cannot predict risk today", 
-                 paste0("We can only predict risk of cancer progression ",
-                        "for a period of 10 years since the beginning ",
-                        " of AS for a patient. The current date ",
-                        format(Sys.time(), format = "%b %e, %Y"), 
-                        " is more than 10 years since the first visit of the patient on ", 
-                        format(as.POSIXct(data$dom[1], origin = "1582-10-14"), format = "%b %e, %Y"), "."),
-                 type = "warning")
-      # output$biopsy_decision_yes = renderText("")
-      # output$biopsy_decision_no = renderText("")
-      # output$biopsy_decision_reason = renderUI("")
-      # return(NULL)
-      curVisitTime = 10
-    }
-    
+    curVisitTime = max(data$visitTimeYears[!is.na(data$psa) | !is.na(data$dre)])
     lastBiopsyTime = max(data$visitTimeYears[!is.na(data$gleason)])
+    
+    if(curVisitTime<=lastBiopsyTime){
+      curVisitTime = lastBiopsyTime + 0.1
+    }
     
     if(input$risk_choice_biopsy=="5_PERC"){
       riskThreshold = 0.05
@@ -184,7 +185,7 @@ shinyServer(function(input, output, session) {
       meanRiskProb = 0
     }else{
       sfit = survfitJM(mvJoint_dre_psa_dre_value_light, data, idVar="P_ID", 
-                     survTimes = curVisitTime, last.time = lastBiopsyTime)
+                       survTimes = curVisitTime, last.time = lastBiopsyTime)
       meanRiskProb = 1 - sfit$summaries[[1]][, "Mean"]
     }
     

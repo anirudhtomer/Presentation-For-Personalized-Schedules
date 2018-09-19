@@ -22,7 +22,7 @@ shinyUI(fluidPage(
   
   # Application title
   tags$div(class="text-center main-header", 
-           headerPanel("Biopsy Planner for Prostate Cancer Patients in Active Surveillance ")),
+           headerPanel("Biopsy Recommender for Prostate Cancer Patients in Active Surveillance ")),
   sidebarLayout(
     # Sidebar with a slider input for number of bins 
     sidebarPanel(
@@ -66,8 +66,8 @@ shinyUI(fluidPage(
                            verticalLayout(tableOutput("table_obs_data"), tags$hr(),
                                           splitLayout(tags$h4(class="observed_graph_title", "Observed PSA measurements"),
                                                       tags$h4(class="observed_graph_title", "Observed DRE measurements")),
-                                          splitLayout(plotlyOutput("graph_obs_psa"),
-                                                      plotlyOutput("graph_obs_dre"))
+                                          splitLayout(plotOutput("graph_obs_psa", height = "450px"),
+                                                      plotOutput("graph_obs_dre", height = "450px"))
                            )),
                   tabPanel("Predictions", tags$br(), verticalLayout(
                     radioButtons("pred_type", "Choose the type of prediction",
@@ -78,7 +78,7 @@ shinyUI(fluidPage(
                     tags$br(),
                     plotOutput("graph_prediction_psa_velocity")
                   )),
-                  tabPanel("Plan biopsy", tags$br(), verticalLayout(
+                  tabPanel("Biopsy recommendation", tags$br(), verticalLayout(
                     radioButtons("year_gap_biopsy",
                                  "Should there be a gap of 1 year between consecutive biopsies?",
                                  choices = c("Yes"="Yes",
@@ -86,14 +86,16 @@ shinyUI(fluidPage(
                                  selected="Yes", inline=T),
                     radioButtons("risk_choice_biopsy",
                                  "Choose the maximum risk of cancer progression (biopsy threshold) you/patient are willing to accept?",
-                                 choices = c("Dynamic risk based on PRIAS dataset"="AUTO", "5%"="5_PERC", "15%" = "15_PERC"),
+                                 choices = c("Follow-up time dependent threshold based on PRIAS dataset"="AUTO", "5%"="5_PERC", "15%" = "15_PERC"),
                                  selected="AUTO", inline=T),
                     tags$span(id="impact_check_msg","Please check the impact (graphs below) of each risk threshold, before making a selection."),
                     tags$br(),
                     wellPanel(fluidRow(column(width = 5, plotOutput("graph_risk_now")),
                                        column(width = 7, verticalLayout(
                                          textOutput("biopsy_decision_yes"), textOutput("biopsy_decision_no"), 
-                                         htmlOutput("biopsy_decision_reason")))))
+                                         htmlOutput("biopsy_decision_reason"), tags$br(), 
+                                         tags$span(id="biopsy_threshold_reason_title","Explanation of the biopsy threshold"),
+                                         htmlOutput("biopsy_threshold_reason")))))
                   ), tags$hr(), tags$br(), titlePanel("Impact of the choice of risk thresholds"),
                   tags$div(id="info_boxplots", paste("Different risk thresholds lead to different suggestions for conducting biopsies.",
                                    "In order to evaluate the impact of each threshold, we conducted an extensive and realistic simulation study based on the PRIAS dataset.",
