@@ -1,0 +1,133 @@
+---
+title: "Personalized Decisions for Prostate Cancer Biopsies in Active Surveillance"
+author: "Anirudh Tomer, Dimitris Rizopoulos"
+date: "September 19, 2018"
+output:
+  ioslides_presentation:
+    widescreen: true
+    css: main.css
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(ggplot2)
+library(ggpubr)
+library(shiny)
+
+# FONT_SIZE = 12
+# POINT_SIZE = 3
+# LARGE_POINT_SIZE = 6
+# 
+# pat_1757$log2psaplus1 = log(pat_1757$psa + 1, base = 2)
+# pat_1757$high_dre = ifelse(pat_1757$dre=="T1c", 0, 1)
+
+load("presetationData.Rdata")
+
+plot_delay =  ggplot() + 
+  geom_point(aes(x=c(0, 4, 7), y=0, shape="A", color="A"), size=LARGE_POINT_SIZE) + geom_point(aes(x=5.5, y=0, shape="B", color="B"), size=LARGE_POINT_SIZE) + 
+  geom_ribbon(aes(x=c(5.5, 7), ymin=0,ymax=Inf), alpha=0.2) +
+  geom_label(aes(x=6.25, y=0.1, label="Delay"), size=5) +
+  xlab("Follow-up time (years)") + ylab("") + ylim(0, 0.2) +
+  scale_shape_manual("", 
+                     labels=c("Biopsies", "Time of cancer progression (unobserved)"),
+                     values=c(18,15)) + 
+  scale_color_manual("", 
+                     labels=c("Biopsies", "Time of cancer progression (unobserved)"),
+                     values=c("black", "red3")) + 
+  scale_x_continuous(breaks=c(0,4,5.5,7)) + 
+  theme(text=element_text(size=FONT_SIZE), axis.line.y = element_blank(), axis.ticks.y = element_blank(), axis.text.y = element_blank(), plot.margin = margin(0,0,0,0),
+        legend.position = "bottom", legend.direction = "horizontal", axis.line.x = element_line())
+
+plot_annual_delay =  ggplot() + 
+  geom_point(aes(x=c(0:6), y=0, shape="A", color="A"), size=LARGE_POINT_SIZE) + geom_point(aes(x=5.5, y=0, shape="B", color="B"), size=LARGE_POINT_SIZE) + 
+  geom_ribbon(aes(x=c(5.5, 6), ymin=0,ymax=Inf), alpha=0.2) +
+  geom_label(aes(x=5.75, y=0.1, label="Delay"), size=5) +
+  xlab("Follow-up time (years)") + ylab("") + ylim(0, 0.2) +
+  scale_shape_manual("", 
+                     labels=c("Biopsies", "Time of cancer progression (unobserved)"),
+                     values=c(18,15)) + 
+  scale_color_manual("", 
+                     labels=c("Biopsies", "Time of cancer progression (unobserved)"),
+                     values=c("black", "red3")) + 
+  scale_x_continuous(breaks=c(0:6, 5.5)) + 
+  theme(text=element_text(size=FONT_SIZE), axis.line.y = element_blank(), axis.ticks.y = element_blank(), axis.text.y = element_blank(), plot.margin = margin(0,0,0,0),
+        legend.position = "bottom", legend.direction = "horizontal", axis.line.x = element_line())
+
+plot_obs_psa_data = ggplot() + 
+    geom_line(data=pat_1757[!is.na(pat_1757$psa),], aes(x=visitTimeYears, y=psa), alpha=0.2, color="dodgerblue4") +
+    geom_point(data=pat_1757[!is.na(pat_1757$psa),], aes(x=visitTimeYears, y=psa), shape=16, size=POINT_SIZE, color="dodgerblue4") + 
+    geom_vline(data=pat_1757[!is.na(pat_1757$gleason),], aes(xintercept=visitTimeYears, linetype="Biopsies"), size=0.7) +
+    scale_linetype_manual("", values="dotted", label="Biopsies") +
+  theme(text=element_text(size=FONT_SIZE), plot.margin = margin(0,r = 20,0,0),
+        legend.position = "bottom", legend.direction = "horizontal", axis.line.y.left = element_line(), axis.line.x = element_line()) + 
+  xlab("Follow-up time (years)") + ylab("PSA (ng/mL)") 
+
+plot_obs_dre_data = ggplot() + 
+    geom_line(data=pat_1757[!is.na(pat_1757$high_dre),], aes(x=visitTimeYears, y=high_dre), alpha=0.2, color="darkorchid") +
+    geom_point(data=pat_1757[!is.na(pat_1757$high_dre),], aes(x=visitTimeYears, y=high_dre), shape=17, size=POINT_SIZE, color="darkorchid") + 
+    geom_vline(data=pat_1757[!is.na(pat_1757$gleason),], aes(xintercept=visitTimeYears, linetype="Biopsies"), size=0.7) +
+    scale_linetype_manual("", values="dotted", label="Biopsies") +
+  scale_y_continuous(breaks=0:1, labels=c("T1c", "above T1c"), limits = c(0,1)) + 
+  theme(text=element_text(size=FONT_SIZE), plot.margin = margin(0,0,0,l=20),
+        legend.position = "bottom", legend.direction = "horizontal", axis.line.y.left = element_line(), axis.line.x = element_line()) + 
+  xlab("Follow-up time (years)") + ylab("DRE (binary)")
+  
+plot_obs_data = ggarrange(plot_obs_psa_data, plot_obs_dre_data, nrow=1, ncol=2,
+                                  common.legend = T, legend = "bottom")
+```
+
+## Prostate Cancer Active Surveillance
+- To avoid over-treatment, men with low grade prostate cancer are advised active surveillance.
+
+- Treatment is advised when cancer progression is observed.
+
+- <span style="color:red">Cancer progression</span> is tracked via:
+    - Prostate-specific antigen measurements.
+    - Digital rectal exmaination. 
+    - <span style="color:red">Biopsies.</span>
+
+## Biopsies vs. Delay in Detection of Cancer Progression
+<div style="float: left; width: 50%;">
+- <span style="color:black; font-size: 40px">Biopsies</span>
+    - are <span style="color:red">burdensome</span> (pain, complications).
+    - but <span style="color:green">reliable</span> too.
+    - are usually conducted with a gap of few months to allow patient to recover.
+</div>
+
+<div style="float: right; width: 50%;">
+- <span style="color:black; font-size: 40px">Cancer Progression</span>
+    - can only be detected with a certain delay.
+
+```{r plot_delay, fig.width=5, fig.height=3, echo = FALSE}
+  plot_delay
+```
+</div>
+
+## Annual Biopsies Focus on Minimizing Delay
+- Maximum delay can be 1 year.
+- <span style="color:red">Too many biopsies</span> (burdensome) for patients who progress slow.
+
+```{r plot_annual_delay, fig.width=7, fig.height=3, fig.align="center", echo = FALSE}
+  plot_annual_delay
+```
+
+## PRIAS uses PSA-DT to Identify Faster Progressions
+
+## Can We Personalize Biopsy Decision?
+- Decision should depend upon
+    - Observed DRE (T1c / above T1c) measurements.
+    - Observed PSA (ng/mL) measurements.
+    - Time and result of previous biopsies.
+
+```{r plot_obs_data, fig.width=9, fig.height=3, fig.align="center", echo = FALSE}
+  plot_obs_data
+```
+
+## Joint Model for Time-to-Event and Longitudinal Data
+We start talking about joint models from here onwards
+
+## Simulation Study
+At some point we talk about simulation study
+
+## Results
