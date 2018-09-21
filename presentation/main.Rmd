@@ -5,7 +5,6 @@ date: "September 19, 2018"
 output:
   ioslides_presentation:
     widescreen: true
-    css: main.css
 runtime: shiny
 ---
 
@@ -14,15 +13,17 @@ knitr::opts_chunk$set(echo = FALSE)
 library(ggplot2)
 library(ggpubr)
 library(shiny)
+library(shinyBS)
 
-# FONT_SIZE = 12
-# POINT_SIZE = 3
-# LARGE_POINT_SIZE = 6
+load("presentationData.Rdata")
+
+FONT_SIZE = 15
+POINT_SIZE = 3
+LARGE_POINT_SIZE = 6
 # 
 # pat_1757$log2psaplus1 = log(pat_1757$psa + 1, base = 2)
 # pat_1757$high_dre = ifelse(pat_1757$dre=="T1c", 0, 1)
 
-load("presetationData.Rdata")
 
 plot_delay =  ggplot() + 
   geom_point(aes(x=c(0, 4, 7), y=0, shape="A", color="A"), size=LARGE_POINT_SIZE) + geom_point(aes(x=5.5, y=0, shape="B", color="B"), size=LARGE_POINT_SIZE) + 
@@ -54,6 +55,27 @@ plot_annual_delay =  ggplot() +
   theme(text=element_text(size=FONT_SIZE), axis.line.y = element_blank(), axis.ticks.y = element_blank(), axis.text.y = element_blank(), plot.margin = margin(0,0,0,0),
         legend.position = "bottom", legend.direction = "horizontal", axis.line.x = element_line())
 
+plot_prias_delay = ggplot() + 
+  geom_point(aes(x=c(0, 4, 6), y=-20, shape="A", color="A"), size=LARGE_POINT_SIZE) + 
+    geom_point(aes(x=5.5, y=-20, shape="B", color="B"), size=LARGE_POINT_SIZE) + 
+    geom_line(aes(x=c(0,0.25,0.5,0.75,1, 1.25,1.5,1.75,2,2.5,3,3.5,4,4.5,5,5.5,6),y=c(-5,-8, -4,15,19, 20,21,18,33,12,11,14,16,17,28,3,7)), alpha=0.2) +
+    geom_point(aes(x=c(0,0.25,0.5,0.75,1, 1.25,1.5,1.75,2,2.5,3,3.5,4,4.5,5,5.5,6),y=c(-5,-8, -4,15,19, 20,21,18,33,12,11,14,16,17,28,3,7), shape="C", color="C"), size=POINT_SIZE) +
+  geom_ribbon(aes(x=c(5.5, 6), ymin=-20,ymax=-10), alpha=0.2) +
+    geom_ribbon(aes(x=c(0, 6), ymin=0,ymax=10), alpha=0.2, fill="red3") +
+  geom_label(aes(x=5.75, y=-15, label="Delay"), size=5) +
+    geom_label(aes(x=3, y=5, label="Annual biopsy when PSA-DT is in this region"), size=5) +
+  xlab("Follow-up time (years)") + ylab("PSA doubling time")+
+  scale_shape_manual("", 
+                     labels=c("Biopsies", "Time of cancer progression (unobserved)", "PSA-DT"),
+                     values=c(18,15,16)) + 
+  scale_color_manual("", 
+                     labels=c("Biopsies", "Time of cancer progression (unobserved)", "PSA-DT"),
+                     values=c("black", "red3", "dodgerblue4")) + 
+  scale_x_continuous(breaks=c(0,4,5.5,6)) + 
+    scale_y_continuous(breaks=seq(-10,40, by=10))+
+  theme(text=element_text(size=FONT_SIZE), plot.margin = margin(0,0,0,0),
+        legend.position = "bottom", legend.direction = "horizontal", axis.line.x = element_line(), axis.line.y.left = element_line())
+
 plot_obs_psa_data = ggplot() + 
     geom_line(data=pat_1757[!is.na(pat_1757$psa),], aes(x=visitTimeYears, y=psa), alpha=0.2, color="dodgerblue4") +
     geom_point(data=pat_1757[!is.na(pat_1757$psa),], aes(x=visitTimeYears, y=psa), shape=16, size=POINT_SIZE, color="dodgerblue4") + 
@@ -75,6 +97,42 @@ plot_obs_dre_data = ggplot() +
   
 plot_obs_data = ggarrange(plot_obs_psa_data, plot_obs_dre_data, nrow=1, ncol=2,
                                   common.legend = T, legend = "bottom")
+
+plot_sim_study_progtime = ggplot() + geom_histogram(aes(x=sim_study_prog_time[sim_study_prog_time!=10]), bins=20) + xlab("Cancer progression time (years)") + ylab("Count") + theme(text=element_text(size=FONT_SIZE), plot.margin = margin(0,0,0,0), axis.line.x = element_line(), axis.line.y.left = element_line())
+
+# Joint model association parameters
+plot_jmFitAssocParam = ggplot(data=jointFitAssocRes) + geom_errorbar(aes(x=assoc, ymin=lower, ymax=upper), width=0.1) + geom_point(aes(x=assoc, y=mean), size=POINT_SIZE) +
+  xlab("") + ylab(expression("log Hazard Ratio (95% CI)")) + 
+  theme(text = element_text(size=FONT_SIZE),  legend.position = "none")
+
+#All patients boxplot
+boxplot_nb_all = ggplot() + geom_boxplot(data = scheduleResCombined, aes(x=methodName, y=nb, color=type), outlier.shape = NA) + scale_y_continuous(breaks=c(1,4,7,10)) + theme(text=element_text(size=FONT_SIZE), legend.title = element_blank(), axis.line = element_line()) + xlab("Method") + ylab("Number of biopsies") + coord_flip() + geom_hline(yintercept = 3, linetype='dashed', color='black')
+
+boxplot_offset_all =  ggplot() + geom_boxplot(data = scheduleResCombined[scheduleResCombined$progression_time<10,], aes(x=methodName, y=offset, color=type), outlier.shape = NA)  + theme(text=element_text(size=FONT_SIZE), legend.title = element_blank(), axis.line = element_line(), axis.title.y = element_blank()) + xlab("Method") + ylab("Delay in detection\n of cancer progression (years)") + coord_flip(ylim = c(0,5)) + geom_hline(yintercept = 2, linetype='dashed', color='black')
+
+boxplot_all = ggarrange(boxplot_nb_all, boxplot_offset_all, common.legend = T, align = "h", legend = "bottom")
+
+#Fast patients boxplot
+boxplot_nb_fast = ggplot() + geom_boxplot(data = scheduleResCombined[scheduleResCombined$progression_time>0 & scheduleResCombined$progression_time<=3.5,], aes(x=methodName, y=nb, color=type), outlier.shape = NA)  + theme(text=element_text(size=FONT_SIZE), legend.title = element_blank(), axis.line = element_line()) + xlab("Method") + ylab("Number of biopsies") + coord_flip() + geom_hline(yintercept = 3, linetype='dashed', color='black')
+
+boxplot_offset_fast =  ggplot() + geom_boxplot(data = scheduleResCombined[scheduleResCombined$progression_time>0 & scheduleResCombined$progression_time<=3.5,], aes(x=methodName, y=offset, color=type), outlier.shape = NA)  + theme(text=element_text(size=FONT_SIZE), legend.title = element_blank(), axis.line = element_line(), axis.title.y = element_blank()) + xlab("Method") + ylab("Delay in detection\n of cancer progression (years)") + coord_flip(ylim = c(0,4.5)) + geom_hline(yintercept = 2, linetype='dashed', color='black')
+
+boxplot_fast = ggarrange(boxplot_nb_fast, boxplot_offset_fast, common.legend = T, align = "h", legend = "bottom")
+
+#Intermediate patients boxplot
+boxplot_nb_intermediate = ggplot() + geom_boxplot(data = scheduleResCombined[scheduleResCombined$progression_time>3.5 & scheduleResCombined$progression_time<10,], aes(x=methodName, y=nb, color=type), outlier.shape = NA)  + theme(text=element_text(size=FONT_SIZE), legend.title = element_blank(), axis.line = element_line()) + xlab("Method") + ylab("Number of biopsies") + coord_flip() + geom_hline(yintercept = 3, linetype='dashed', color='black')
+
+boxplot_offset_intermediate =  ggplot() + geom_boxplot(data = scheduleResCombined[scheduleResCombined$progression_time>3.5 & scheduleResCombined$progression_time<10,], aes(x=methodName, y=offset, color=type), outlier.shape = NA)  + theme(text=element_text(size=FONT_SIZE), legend.title = element_blank(), axis.line = element_line(), axis.title.y = element_blank()) + xlab("Method") + ylab("Delay in detection\n of cancer progression (years)") + coord_flip(ylim = c(0,6)) + geom_hline(yintercept = 2, linetype='dashed', color='black')
+
+boxplot_intermediate = ggarrange(boxplot_nb_intermediate, boxplot_offset_intermediate, common.legend = T, align = "h", legend = "bottom")
+
+#Slow patients boxplot
+boxplot_nb_slow = ggplot() + geom_boxplot(data = scheduleResCombined[scheduleResCombined$progression_time==10,], aes(x=methodName, y=nb, color=type), outlier.shape = NA) + scale_y_continuous(breaks=c(1,4,7,10)) + theme(text=element_text(size=FONT_SIZE), legend.title = element_blank(), axis.line = element_line()) + xlab("Method") + ylab("Number of biopsies") + coord_flip() + geom_hline(yintercept = 3, linetype='dashed', color='black')
+
+boxplot_offset_slow =  ggplot() + geom_text(aes(x=1,y=1, label="No cancer progressions.\n Hence no delay."), size=5) + theme(axis.line = element_line(), axis.text = element_blank(), axis.ticks = element_blank(), axis.title = element_blank())
+
+boxplot_slow = ggarrange(boxplot_nb_slow, boxplot_offset_slow, common.legend = T, align = "h", legend = "bottom")
+
 ```
 
 ## Prostate Cancer Active Surveillance
@@ -113,8 +171,19 @@ plot_obs_data = ggarrange(plot_obs_psa_data, plot_obs_dre_data, nrow=1, ncol=2,
 ```
 
 ## PRIAS uses PSA-DT to Identify Faster Progressions
+- PSA-DT (PSA doubling time)
+    - Fit a regression line through observed PSA measurements to measure rate of change of PSA.
+    - Annual biopsy only if 0 < PSA-DT < 10.
 
-## Can We Personalize Biopsy Decision?
+```{r plot_prias_delay, fig.width=7, fig.height=4, fig.align="center", echo = FALSE}
+  plot_prias_delay
+```
+
+## It May Not Always Work
+- Simulations show <span style="color:red">4 to 10 unnecessary biopsies</span> for patients who never observe cancer progression in 10 years of follow-up.
+- PRIAS reports <span style="color:red">low compliance (~20%)</span> for Annual biopsy due to PSA-DT.
+
+## Personalized Biopsy Decisions
 - Decision should depend upon
     - Observed DRE (T1c / above T1c) measurements.
     - Observed PSA (ng/mL) measurements.
@@ -125,9 +194,100 @@ plot_obs_data = ggarrange(plot_obs_psa_data, plot_obs_dre_data, nrow=1, ncol=2,
 ```
 
 ## Joint Model for Time-to-Event and Longitudinal Data
-We start talking about joint models from here onwards
 
-## Simulation Study
-At some point we talk about simulation study
+## Fitted model
+```{r plot_jmFitAssocParam, fig.width=8, fig.height=5, fig.align="center", echo = FALSE}
+  plot_jmFitAssocParam
+```
 
-## Results
+## Personalized Methodology
+Put a link for the shiny app here, to explain how it works.
+
+## Comparision: Personalized Vs. Fixed Schedules
+- <span style="color:red">Cannot be done on PRIAS data</span>:
+    - True progression times are not known, because they are interval censored.
+    - Biopsies are already conducted for patients.
+    - Ethical aspects (new biopsies).
+- <span style="color:green">Simulation study</span>:
+    - Realistic (uses model fitted to the PRIAS dataset).
+    - Follow-up time period is 0 to 10 years.
+    - 500 datasets x (750 training + 250 test) patients.
+    
+## Schedules Compared
+- <span style="color:red">Fixed</span>:
+    - PRIAS (biopsy every 3 years, and if PSA goes up too fast then annual biopsy)
+    - Annual (annual biopsies)
+
+- <span style="color:green">Personalized (risk based)</span>:
+    - 5% risk threshold
+    - 15% risk threshold
+    - follow-up time dependent threshold (automatic selection)
+
+### <span style="color:black">Comparison criteria </span>
+- Number of biopsies until cancer progression is detected.
+- Delay in detection of cancer progression.
+
+## Result: Cancer Progression Times
+- <span style="color:black">Slow progression</span>: 50% patients never observe cancer progression in 10 years.
+- Remaining 50%:
+```{r plot_sim_study_progtime, fig.width=5, fig.height=3, fig.align="center", echo = FALSE}
+  plot_sim_study_progtime
+```
+    - <span style="color:black">Fast progression</span>: 30% patients observe cancer progression in 0 to 3.5 years.
+    - <span style="color:black">Intermediate progression</span>: 20% patients observe cancer progression in 3.5 to 10 years.
+    
+## Result: Performance of Schedules
+```{r boxplots}
+ui_box <- fluidPage(
+  tags$span(style="font-weight: bold; color: black; font-size: 20px;", "Patient Selection: "),
+  bsButton("button_boxplot_all", label = "All patients", style = "primary"),
+  bsButton("button_boxplot_fast", label = "Fast (30% patients)"),
+  bsButton("button_boxplot_intermediate", label = "Intermediate (20% patients)"),
+  bsButton("button_boxplot_slow", label = "Slow (50% patients)"),
+  hr(),
+  plotOutput("plot_boxplot")
+)
+
+server_box <- function(input, output, session){
+  
+  observeEvent(input$button_boxplot_all, {
+    updateButton(session, "button_boxplot_all", style="primary")
+    updateButton(session, "button_boxplot_fast", style="default")
+    updateButton(session, "button_boxplot_intermediate", style="default")
+    updateButton(session, "button_boxplot_slow", style="default")
+    
+    output$plot_boxplot = renderPlot(boxplot_all)
+  })
+  
+  observeEvent(input$button_boxplot_fast, {
+    updateButton(session, "button_boxplot_all", style="default")
+    updateButton(session, "button_boxplot_fast", style="primary")
+    updateButton(session, "button_boxplot_intermediate", style="default")
+    updateButton(session, "button_boxplot_slow", style="default")
+    
+    output$plot_boxplot = renderPlot(boxplot_fast)
+  })
+  
+  observeEvent(input$button_boxplot_intermediate, {
+    updateButton(session, "button_boxplot_all", style="default")
+    updateButton(session, "button_boxplot_fast", style="default")
+    updateButton(session, "button_boxplot_intermediate", style="primary")
+    updateButton(session, "button_boxplot_slow", style="default")
+    
+    output$plot_boxplot = renderPlot(boxplot_intermediate)
+  })
+  
+  observeEvent(input$button_boxplot_slow, {
+    updateButton(session, "button_boxplot_all", style="default")
+    updateButton(session, "button_boxplot_fast", style="default")
+    updateButton(session, "button_boxplot_intermediate", style="default")
+    updateButton(session, "button_boxplot_slow", style="primary")
+    
+    output$plot_boxplot = renderPlot(boxplot_slow)
+  })
+
+  output$plot_boxplot <- renderPlot(boxplot_all)
+}
+
+shinyApp(ui_box, server_box)
+```
