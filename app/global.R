@@ -347,13 +347,15 @@ summaryGraph = function(data, curVisitTime=10, lastBiopsyTime,
   maxPSA = max(psaDs[,-1], na.rm=T)
   minPSA = min(psaDs[,-1], na.rm = T)
   
+  meanPSA = (maxPSA + minPSA)/2
+  
   #real PSA, and fake DRE values
   psaPlot = ggplot() + 
     geom_vline(aes(xintercept = lastBiopsyTime, linetype="Latest biopsy"), show.legend = F, size=0.7) +
     geom_vline(aes(xintercept = curVisitTime), show.legend = F, color=THEME_COLOR_DARK, linetype="twodash", size=0.7) +
     geom_point(aes(x = 0, y=900, shape="Observed DRE", color="Observed DRE")) +
     geom_line(aes(x = 0, y=900, linetype="Fitted")) +
-    geom_label(aes(x=curVisitTime, y=0.5, 
+    geom_label(aes(x=curVisitTime, y=meanPSA, 
                    label=paste0("Current visit\n", round(curVisitTime,1), " years")), 
                size=5, color=THEME_COLOR_DARK) +
     geom_line(data = psaDs, aes(x = visitTimeYears, y=fitted_log2psaplus1, linetype="Fitted")) +
@@ -368,7 +370,7 @@ summaryGraph = function(data, curVisitTime=10, lastBiopsyTime,
                        labels=c("Observed DRE (T1c / above T1c)", expression('Observed log'[2]*'(PSA + 1)')),
                        values = c("darkorchid", THEME_COLOR)) + 
     ylab(expression('log'[2]*'(PSA + 1)')) + 
-    ylim(0, maxPSA) +
+    ylim(minPSA, maxPSA) +
     xlim(0, curVisitTime + curVisitTime * 0.1) + 
     xlab("Follow-up time (years)") + 
     theme_bw() + 
