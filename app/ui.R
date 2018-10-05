@@ -90,7 +90,7 @@ shinyUI(fluidPage(
                                  selected="AUTO", inline=T),
                     tags$span(id="impact_check_msg","Please check the impact (graphs below) of each risk threshold, before making a selection."),
                     tags$br(),
-                    wellPanel(fluidRow(column(width = 5, plotOutput("graph_risk_now")),
+                    wellPanel(fluidRow(column(width = 5, plotOutput("graph_risk_now", height="500px")),
                                        column(width = 7, verticalLayout(
                                          textOutput("biopsy_decision_yes"), textOutput("biopsy_decision_no"), 
                                          htmlOutput("biopsy_decision_reason"), tags$br(), 

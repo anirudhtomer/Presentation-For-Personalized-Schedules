@@ -5,8 +5,7 @@
 # Find out more about building applications with Shiny here:
 # 
 #    http://shiny.rstudio.com/
-#
-
+#]
 library(shiny)
 library(shinyalert)
 library(JMbayes)
@@ -181,13 +180,9 @@ and positive predictive value."
       riskThreshold = 1 - getSurvThreshold(lastBiopsyTime, curVisitTime)
     }
     
-    if(curVisitTime==lastBiopsyTime){
-      meanRiskProb = 0
-    }else{
-      sfit = survfitJM(mvJoint_dre_psa_dre_value_light, data, idVar="P_ID", 
-                       survTimes = curVisitTime, last.time = lastBiopsyTime)
-      meanRiskProb = 1 - sfit$summaries[[1]][, "Mean"]
-    }
+    sfit = survfitJM(mvJoint_dre_psa_dre_value_light, data, idVar="P_ID", 
+                     survTimes = curVisitTime, last.time = lastBiopsyTime)
+    meanRiskProb = 1 - sfit$summaries[[1]][, "Mean"]
     
     if(meanRiskProb >= riskThreshold){
       if(curVisitTime - lastBiopsyTime >= 1 | input$year_gap_biopsy=="No"){
@@ -213,7 +208,7 @@ and positive predictive value."
       
     }
     
-    plot = riskColumnGraph(data, curVisitTime, riskThreshold, meanRiskProb)
+    plot = riskGaugeGraph(data, curVisitTime, riskThreshold, meanRiskProb)
     
     return(plot)
   })

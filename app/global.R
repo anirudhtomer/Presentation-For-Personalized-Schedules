@@ -293,7 +293,7 @@ getSurvThreshold = function(lastBiopsyTime, curVisitTime){
   return(cutpoints[lowerTimeIndex, riskMethodName] + diffProb)
 }
 
-riskColumnGraph = function(data, curVisitTime, riskThreshold, meanRiskProb, firstVisitDom){
+riskColumnGraph = function(data, curVisitTime, riskThreshold, meanRiskProb){
   if(meanRiskProb >= riskThreshold){
     fillColor = "red3"
   }else{
@@ -325,6 +325,36 @@ riskColumnGraph = function(data, curVisitTime, riskThreshold, meanRiskProb, firs
     ylab("Risk of cancer progression (%)")
   return(plot)
 }
+
+riskGaugeGraph = function(data, curVisitTime, riskThreshold, meanRiskProb){
+  if(meanRiskProb >= riskThreshold){
+    fillColor = "red3"
+  }else{
+    fillColor = "forestgreen"
+  }
+  
+  curVisitDate = format(as.POSIXct(curVisitTime * 365 * 24 * 60 * 60 + data$dom[1], origin = "1582-10-14"),
+                  format = "%b %e, %Y")
+  
+  riskGaugeLabel = paste0("Risk of cancer progression on latest visit \n", curVisitDate, " (", round(curVisitTime,1)," years)")
+  riskGauge = ggplot(data = NULL, 
+                     aes(ymax = meanRiskProb, ymin = 0, xmax = 2, xmin = 1, fill="Risk")) +
+    geom_rect(aes(ymax=1, ymin=0, xmax=2, xmin=1), fill ="white", color=fillColor) +
+    geom_rect() +
+    scale_fill_manual("", values=fillColor) +
+    coord_polar(theta = "y",start=-pi/2) + xlim(c(0, 2.5)) + ylim(c(0,2)) +
+    geom_text(aes(x = 0, y = 0, label = paste0(round(meanRiskProb*100,2),"%")), color=fillColor, size=8) +
+    geom_text(aes(x=0.5, y=1.5, label = riskGaugeLabel), size=6, color=fillColor) +
+    geom_segment(aes(x=0.8, xend=2.2, y=riskThreshold, yend=riskThreshold), color='firebrick1', linetype='dashed')+
+    geom_text(aes(x=2.4, y=riskThreshold, label=paste0("Biopsy threshold\n", round(riskThreshold * 100,2), "%")), size=5, color='firebrick1') +
+    theme_void() +
+    theme(strip.background = element_blank(),
+          strip.text.x = element_blank()) +
+    guides(fill=FALSE) +
+    guides(colour=FALSE)
+  return(riskGauge)
+}
+
 
 summaryGraph = function(data, curVisitTime=10, lastBiopsyTime,
                         FONT_SIZE=12, POINT_SIZE = 2, DRE_PSA_Y_GAP=0.1){
