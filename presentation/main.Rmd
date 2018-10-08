@@ -228,9 +228,9 @@ changes over time for the same patient</span>
 <br/>
 
 - Risk predictions based upon
-    - Observed DRE (T1c / above T1c) measurements.
-    - Observed PSA (ng/mL) measurements.
-    - Time and result of previous biopsies.
+    - <span style="color:red">All available</span> PSA (ng/mL) measurements
+    - <span style="color:red">All available</span> DRE (T1c / above T1c) measurements
+    - Time and results of previous biopsies
 
 ## A New Approach - 3
 
@@ -272,9 +272,30 @@ renderPlot({
 
 ## Joint Models for Risk Predictions - 1
 
-- Motivate joint models
+- Challenges in incorporating all available measurements of patients
 
+    - Not all measurements at the same follow-up times for all patients $\rightarrow$ <span style="color:red">Unbalanced dataset</span>
+    
+    - Patients may miss some visits $\rightarrow$ <span style="color:red">Missing data</span>
+    
+    - Measurements of PSA and DRE on the same patient more *alike* than measurements from different patients <span style="color:red">Correlations</span>
+    
+    - Progression affects future values of PSA and DRE $\rightarrow$ <span style="color:red">Endogeneity (standard Cox model not valid)</span>
+    
 ## Joint Models for Risk Predictions - 2
+
+<br/><br/>
+<div class="blue">**To account for these challenges we use the framework of**</div>
+
+<br/>
+
+<div style="text-align:center;width:800px;border:3px solid black">
+<br/>
+<strong><font size="6" color = "red">Joint Models for Longitudinal & Survival Data</font></strong>
+<br/>
+</div>
+
+## Joint Models for Risk Predictions - 3
 
 ```{r, echo = FALSE}
 inputPanel(
@@ -295,6 +316,66 @@ renderPlot({
     
 }, width = 800, height = 400)
 ```
+
+## Joint Models for Risk Predictions - 4
+
+- In more detail:
+
+    - We use mixed effects models to describe the longitudinal profiles of each outcome per patient
+    
+    - We combine these estimated profiles with a time-varying Cox model
+    
+    - Flexible specification of the association structure
+    
+## Joint Models for Risk Predictions - 5
+```{r, echo = FALSE}
+inputPanel(
+    sliderInput("measr_3", label = "times:", min = 1, max = 20, value = 1, step = 1,
+                ticks = FALSE,
+                animate = animationOptions(interval = 1000, loop = FALSE, 
+                                           playButton = NULL, pauseButton = NULL))
+)
+
+renderPlot({
+    set.seed(1234)
+    times <- seq(0.01, 10, len = 15)
+    m <- rnorm(length(times), 1 + cos(0.5 * times), 0.5)
+    h <-  0.5 * 0.8 * times^(0.8-1) * exp(-1.2 * m)
+    DD <- data.frame(
+        val = c(h, m),
+        times = times,
+        what = gl(2, length(times), labels = c("hazard function", "longitudinal outcome")))
+    i <- input$measr_3
+    tts <- seq(0, 10, length = 20)
+    print(xyplot(val ~ times | what, data = DD,
+                 scales = list(y = list(relation = "free")), layout = c(1, 2), as.table = TRUE,
+                 ylab = "", xlab = "Time", panel = function (x, y) {
+                     if (panel.number() == 1) {
+                         panel.xyplot(x, y, type = "smooth", lwd = 3, col = 2)
+                         panel.abline(v = tts[i], lwd = 2, lty = 2,
+                                      col = 1)
+                     } else {
+                         ind <- c(1, 3, 4, 5, 9, 11, 14, 15)
+                         panel.xyplot(x[ind], y[ind], type = "p", col = 1, pch = 8,
+                                      lwd = 3)
+                         panel.abline(v = tts[i], lwd = 2, lty = 2,
+                                      col = 1)
+                         yy <- 1 + cos(0.5 * x)
+                         panel.xyplot(x, yy, type = "l", lwd = 3,
+                                      col = 3)
+                         #
+                         a1 <- tts[i]
+                         y1 <- 1 + cos(0.5 * a1)
+                         y1d <- - 0.5 * sin(0.5 * a1)
+                         xx <- seq(a1 - 0.75, a1 + 0.75, len = 3)
+                         extra <- if (a1 < 3) 0.06 else -0.07
+                         yy <- y1 + y1d * (xx - a1) + extra
+                         panel.xyplot(xx, yy, type = "l", lwd = 3, col = "magenta")
+                     }
+            }))
+}, width = 800, height = 400)
+```
+
 
 ## Fitted Joint Model to PRIAS - 1
 
