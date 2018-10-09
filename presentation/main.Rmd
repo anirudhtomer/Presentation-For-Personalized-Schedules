@@ -154,7 +154,7 @@ boxplot_slow = ggarrange(boxplot_nb_slow, boxplot_offset_slow, common.legend = T
 
 - <span style="color:red">Cancer progression</span> is tracked via:
     - Prostate-specific antigen measurements
-    - Digital rectal exmaination
+    - Digital rectal examination
     - <span style="color:red">Biopsies</span>
 
 <br/>
@@ -163,7 +163,7 @@ boxplot_slow = ggarrange(boxplot_nb_slow, boxplot_offset_slow, common.legend = T
     - typically via biopsies
 
 
-## Biopsies vs. Delay in Detection of Cancer Progression
+## Biopsies vs. Delay in Cancer Detection
 <div style="float: left; width: 50%;">
 - <span style="color:black; font-size: 40px">Biopsies</span>
     - are <span style="color:red">burdensome</span> (pain, complications)
@@ -180,8 +180,8 @@ boxplot_slow = ggarrange(boxplot_nb_slow, boxplot_offset_slow, common.legend = T
 </div>
 
 ## Annual Biopsies
-- Focus on Minimizing Delay
-    - Maximum delay can be 1 year
+- Focus on minimizing delay
+    - maximum delay can be 1 year
 <br/>
 - Many <span style="color:red">unnecessary</span> biopsies for patients who progress slow
 
@@ -201,12 +201,12 @@ boxplot_slow = ggarrange(boxplot_nb_slow, boxplot_offset_slow, common.legend = T
 
 ## Less Frequent Biopsies - 2
 
-- Still <span style="color:red">4 to 10 unnecessary biopsies</span>
-    - based on simulation 4-10 unnecessary biopsies for patient with progression >10 years
+- Still <span style="color:red">unnecessary biopsies</span>
+    - based on simulations, 4-10 unnecessary biopsies for patients with progression >10 years
 
 <br/>
 
-- PRIAS reports <span style="color:red">low compliance (~20%)</span> for Annual biopsy due to PSA-DT.
+- PRIAS reports <span style="color:red">low compliance (~20%)</span> for annual biopsy due to PSA-DT
 
 ## A New Approach - 1
 
@@ -215,7 +215,7 @@ boxplot_slow = ggarrange(boxplot_nb_slow, boxplot_offset_slow, common.legend = T
 
 <div style="float: center; text-align: center; width: 700px; border: 3px solid black">
 <br/><br/>
-<strong><font size="6" color = "red">We need to improve biopsy scheduling</font></strong>
+<strong><font size="6" color = "red">Considerable room to improve biopsy scheduling</font></strong>
 <br/><br/>
 </div>
 
@@ -230,7 +230,7 @@ changes over time for the same patient</span>
 - Risk predictions based upon
     - <span style="color:red">All available</span> PSA (ng/mL) measurements
     - <span style="color:red">All available</span> DRE (T1c / above T1c) measurements
-    - Time and results of previous biopsies
+    - <span style="color:green">Time and results of previous biopsies</span>
 
 ## A New Approach - 3
 
@@ -278,7 +278,7 @@ renderPlot({
     
     - Patients may miss some visits $\rightarrow$ <span style="color:red">Missing data</span>
     
-    - Measurements of PSA and DRE on the same patient more *alike* than measurements from different patients <span style="color:red">Correlations</span>
+    - Measurements of PSA and DRE on the same patient more *alike* than measurements from different patients $\rightarrow$ <span style="color:red">Correlations</span>
     
     - Progression affects future values of PSA and DRE $\rightarrow$ <span style="color:red">Endogeneity (standard Cox model not valid)</span>
     
@@ -325,7 +325,7 @@ renderPlot({
     
     - We combine these estimated profiles with a time-varying Cox model
     
-    - Flexible specification of the association structure
+    - <span style="color:magenta">Flexible specification of the association structure</span>
     
 ## Joint Models for Risk Predictions - 5
 ```{r, echo = FALSE}
@@ -377,19 +377,28 @@ renderPlot({
 ```
 
 
-## Fitted Joint Model to PRIAS - 1
+## Joint Model for PRIAS - 1
 
-- describe the model
+- $\log_2$ PSA trajectories: Age effect + nonlinear evolutions over time
+- DRE > T1c trajectories: Age effect + linear evolutions over time
+
+<br/>
+
+- Risk of Gleason reclassification: 
+    - Age effect
+    - log odds of DRE > T1c
+    - $\log_2$ PSA level
+    - $\log_2$ PSA velocity
 
 
-## Fitted Joint Model to PRIAS - 2
+## Joint Model for PRIAS - 2
 ```{r plot_jmFitAssocParam, fig.width=8, fig.height=5, fig.align="center", echo = FALSE}
   plot_jmFitAssocParam
 ```
 
-## Fitted Joint Model to PRIAS - 3
+## Joint Model for PRIAS - 3
 
-- Predictions, AUC and prederr
+- Predictions, AUC and/or Prediction Error?
 
 
 
@@ -422,39 +431,47 @@ renderPlot({
 <font color = "black" size = "6">**Lets see it in practice...**</font>
 </div>
 
+## Personalized vs. Fixed Schedules - 1
 
+- <span style="color:red">Is it better to work with personalized schedules?</span>
 
+<br/>
 
-## Comparison: Personalized Vs. Fixed Schedules
 - <span style="color:green">Simulation study</span>:
-    - Realistic (uses model fitted to the PRIAS dataset).
-    - Follow-up time period is 0 to 10 years.
-    - 500 datasets x (750 training + 250 test) patients.
-    
-## Schedules Compared
+    - The same characteristics as in PRIAS
+    - 500 datasets x (750 training + 250 test) patients
+
+## Personalized vs. Fixed Schedules - 2
+- <span style="color:black">Slow progression</span>: 50% patients never progress
+- Remaining 50%:
+    - <span style="color:black">Fast progression</span>: 30% progression in 0 to 3.5 years
+    - <span style="color:black">Intermediate progression</span>: 20% progression in 3.5 to 10 years
+```{r plot_sim_study_progtime, fig.width=5, fig.height=3, fig.align="center", echo = FALSE}
+  plot_sim_study_progtime
+```
+
+## Personalized vs. Fixed Schedules - 3
 - <span style="color:red">Fixed</span>:
     - PRIAS (biopsy every 3 years, and if PSA goes up too fast then annual biopsy)
     - Annual (annual biopsies)
 
+<br/>
+
 - <span style="color:green">Personalized (risk based)</span>:
     - 5% risk threshold
     - 15% risk threshold
-    - follow-up time dependent threshold (automatic selection)
+    - time dependent threshold based on F1 score
 
-### <span style="color:black">Comparison criteria </span>
-- Number of biopsies until cancer progression is detected.
-- Delay in detection of cancer progression.
+## Personalized vs. Fixed Schedules - 4
 
-## Result: Cancer Progression Times
-- <span style="color:black">Slow progression</span>: 50% patients never observe cancer progression in 10 years.
-- Remaining 50%:
-```{r plot_sim_study_progtime, fig.width=5, fig.height=3, fig.align="center", echo = FALSE}
-  plot_sim_study_progtime
-```
-    - <span style="color:black">Fast progression</span>: 30% patients observe cancer progression in 0 to 3.5 years.
-    - <span style="color:black">Intermediate progression</span>: 20% patients observe cancer progression in 3.5 to 10 years.
-    
-## Result: Performance of Schedules
+<br/>
+<br/>
+
+- <span style="color:black">Comparison criteria </span>
+    - Number of biopsies until cancer progression
+    - Delay in detection of cancer progression
+
+## Simulation Results
 ```{r boxplots}
 ui_box <- fluidPage(
   tags$span(style="font-weight: bold; color: black; font-size: 20px;", "Patient Selection: "),
