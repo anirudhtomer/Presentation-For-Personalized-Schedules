@@ -118,30 +118,30 @@ plot_jmFitAssocParam = ggplot(data=jointFitAssocRes) + geom_errorbar(aes(x=assoc
   theme(text = element_text(size=FONT_SIZE),  legend.position = "none")
 
 #All patients boxplot
-boxplot_nb_all = ggplot() + geom_boxplot(data = scheduleResCombined, aes(x=methodName, y=nb, color=type), outlier.shape = NA) + scale_y_continuous(breaks=c(1,4,7,10)) + theme(text=element_text(size=FONT_SIZE), legend.title = element_blank(), axis.line = element_line()) + xlab("Method") + ylab("Number of biopsies") + coord_flip() + geom_hline(yintercept = 3, linetype='dashed', color='black')
+boxplot_nb_all = ggplot() + geom_boxplot(data = scheduleResCombined, aes(x=methodName, y=nb, color=type), outlier.shape = NA) + scale_y_continuous(breaks=c(1,4,7,10), limits = c(0,10)) + theme(text=element_text(size=FONT_SIZE), legend.title = element_blank(), axis.line = element_line()) + xlab("Method") + ylab("Number of biopsies") + coord_flip() + geom_hline(yintercept = 3, linetype='dashed', color='black')
 
-boxplot_offset_all =  ggplot() + geom_boxplot(data = scheduleResCombined[scheduleResCombined$progression_time<10,], aes(x=methodName, y=offset, color=type), outlier.shape = NA)  + theme(text=element_text(size=FONT_SIZE), legend.title = element_blank(), axis.line = element_line(), axis.title.y = element_blank()) + xlab("Method") + ylab("Delay in detection\n of cancer progression (years)") + coord_flip(ylim = c(0,5)) + geom_hline(yintercept = 2, linetype='dashed', color='black')
+boxplot_offset_all =  ggplot() + geom_boxplot(data = scheduleResCombined[scheduleResCombined$progression_time<10,], aes(x=methodName, y=offset, color=type), outlier.shape = NA)  + theme(text=element_text(size=FONT_SIZE), legend.title = element_blank(), axis.line = element_line(), axis.title.y = element_blank()) + xlab("Method") + ylab("Delay in detection\n of cancer progression (years)") + coord_flip(ylim = c(0,6)) + geom_hline(yintercept = 2, linetype='dashed', color='black')
 
 boxplot_all = ggarrange(boxplot_nb_all, boxplot_offset_all, common.legend = T, align = "h", legend = "bottom")
 
 #Fast patients boxplot
-boxplot_nb_fast = ggplot() + geom_boxplot(data = scheduleResCombined[scheduleResCombined$progression_time>0 & scheduleResCombined$progression_time<=3.5,], aes(x=methodName, y=nb, color=type), outlier.shape = NA)  + theme(text=element_text(size=FONT_SIZE), legend.title = element_blank(), axis.line = element_line()) + xlab("Method") + ylab("Number of biopsies") + coord_flip() + geom_hline(yintercept = 3, linetype='dashed', color='black')
+boxplot_nb_fast = ggplot() + geom_boxplot(data = scheduleResCombined[scheduleResCombined$progression_time>0 & scheduleResCombined$progression_time<=3.5,], aes(x=methodName, y=nb, color=type), outlier.shape = NA)  + theme(text=element_text(size=FONT_SIZE), legend.title = element_blank(), axis.line = element_line()) + xlab("Method") + ylab("Number of biopsies") +  scale_y_continuous(breaks=c(1,4,7,10), limits = c(1,10)) + coord_flip() + geom_hline(yintercept = 3, linetype='dashed', color='black')
 
-boxplot_offset_fast =  ggplot() + geom_boxplot(data = scheduleResCombined[scheduleResCombined$progression_time>0 & scheduleResCombined$progression_time<=3.5,], aes(x=methodName, y=offset, color=type), outlier.shape = NA)  + theme(text=element_text(size=FONT_SIZE), legend.title = element_blank(), axis.line = element_line(), axis.title.y = element_blank()) + xlab("Method") + ylab("Delay in detection\n of cancer progression (years)") + coord_flip(ylim = c(0,4.5)) + geom_hline(yintercept = 2, linetype='dashed', color='black')
+boxplot_offset_fast =  ggplot() + geom_boxplot(data = scheduleResCombined[scheduleResCombined$progression_time>0 & scheduleResCombined$progression_time<=3.5,], aes(x=methodName, y=offset, color=type), outlier.shape = NA)  + theme(text=element_text(size=FONT_SIZE), legend.title = element_blank(), axis.line = element_line(), axis.title.y = element_blank()) + xlab("Method") + ylab("Delay in detection\n of cancer progression (years)") + coord_flip(ylim = c(0,6)) + geom_hline(yintercept = 2, linetype='dashed', color='black')
 
 boxplot_fast = ggarrange(boxplot_nb_fast, boxplot_offset_fast, common.legend = T, align = "h", legend = "bottom")
 
 #Intermediate patients boxplot
-boxplot_nb_intermediate = ggplot() + geom_boxplot(data = scheduleResCombined[scheduleResCombined$progression_time>3.5 & scheduleResCombined$progression_time<10,], aes(x=methodName, y=nb, color=type), outlier.shape = NA)  + theme(text=element_text(size=FONT_SIZE), legend.title = element_blank(), axis.line = element_line()) + xlab("Method") + ylab("Number of biopsies") + coord_flip() + geom_hline(yintercept = 3, linetype='dashed', color='black')
+boxplot_nb_intermediate = ggplot() + geom_boxplot(data = scheduleResCombined[scheduleResCombined$progression_time>3.5 & scheduleResCombined$progression_time<10,], aes(x=methodName, y=nb, color=type), outlier.shape = NA)  + theme(text=element_text(size=FONT_SIZE), legend.title = element_blank(), axis.line = element_line()) + xlab("Method") + ylab("Number of biopsies") + scale_y_continuous(breaks=c(1,4,7,10), limits = c(1,10)) + coord_flip() + geom_hline(yintercept = 3, linetype='dashed', color='black')
 
 boxplot_offset_intermediate =  ggplot() + geom_boxplot(data = scheduleResCombined[scheduleResCombined$progression_time>3.5 & scheduleResCombined$progression_time<10,], aes(x=methodName, y=offset, color=type), outlier.shape = NA)  + theme(text=element_text(size=FONT_SIZE), legend.title = element_blank(), axis.line = element_line(), axis.title.y = element_blank()) + xlab("Method") + ylab("Delay in detection\n of cancer progression (years)") + coord_flip(ylim = c(0,6)) + geom_hline(yintercept = 2, linetype='dashed', color='black')
 
 boxplot_intermediate = ggarrange(boxplot_nb_intermediate, boxplot_offset_intermediate, common.legend = T, align = "h", legend = "bottom")
 
 #Slow patients boxplot
-boxplot_nb_slow = ggplot() + geom_boxplot(data = scheduleResCombined[scheduleResCombined$progression_time==10,], aes(x=methodName, y=nb, color=type), outlier.shape = NA) + scale_y_continuous(breaks=c(1,4,7,10)) + theme(text=element_text(size=FONT_SIZE), legend.title = element_blank(), axis.line = element_line()) + xlab("Method") + ylab("Number of biopsies") + coord_flip() + geom_hline(yintercept = 3, linetype='dashed', color='black')
+boxplot_nb_slow = ggplot() + geom_boxplot(data = scheduleResCombined[scheduleResCombined$progression_time==10,], aes(x=methodName, y=nb, color=type), outlier.shape = NA) + theme(text=element_text(size=FONT_SIZE), legend.title = element_blank(), axis.line = element_line()) + xlab("Method") + ylab("Number of biopsies") + scale_y_continuous(breaks=c(1,4,7,10), limits = c(1,10)) + coord_flip() + geom_hline(yintercept = 3, linetype='dashed', color='black') 
 
-boxplot_offset_slow =  ggplot() + geom_text(aes(x=1,y=1, label="No cancer progressions.\n Hence no delay."), size=5) + theme(axis.line = element_line(), axis.text = element_blank(), axis.ticks = element_blank(), axis.title = element_blank())
+boxplot_offset_slow =  ggplot() + geom_text(aes(x=1,y=1, label="No cancer progressions.\n Hence no delay."), size=5) + xlab("Delay in detection\n of cancer progression (years)") + theme(text=element_text(size=FONT_SIZE), axis.line = element_line(), axis.text = element_blank(), axis.ticks = element_blank(), axis.title.y = element_blank())
 
 boxplot_slow = ggarrange(boxplot_nb_slow, boxplot_offset_slow, common.legend = T, align = "h", legend = "bottom")
 
@@ -441,15 +441,6 @@ renderPlot({
     - The same characteristics as in PRIAS
     - 500 datasets x (750 training + 250 test) patients
 
-## Personalized vs. Fixed Schedules - 2
-- <span style="color:black">Slow progression</span>: 50% patients never progress
-- Remaining 50%:
-    - <span style="color:black">Fast progression</span>: 30% progression in 0 to 3.5 years
-    - <span style="color:black">Intermediate progression</span>: 20% progression in 3.5 to 10 years
-```{r plot_sim_study_progtime, fig.width=5, fig.height=3, fig.align="center", echo = FALSE}
-  plot_sim_study_progtime
-```
-
 ## Personalized vs. Fixed Schedules - 3
 - <span style="color:red">Fixed</span>:
     - PRIAS (biopsy every 3 years, and if PSA goes up too fast then annual biopsy)
@@ -471,12 +462,28 @@ renderPlot({
     - Number of biopsies until cancer progression
     - Delay in detection of cancer progression
 
-## Simulation Results
+## Simulation Results - 1
+```{r boxplot_all, fig.width=10, fig.height=5, fig.align="center", echo = FALSE}
+  boxplot_all
+```
+
+## Simulation Results - 2
+- For illustration purposes, we define:
+    - <span style="color:black">Slow progression</span>: patients who never progress (50%)
+    - Remaining 50%:
+        - <span style="color:black">Fast progression</span>: 30% progression in 0 to 3.5 years
+        - <span style="color:black">Intermediate progression</span>: 20% progression in 3.5 to 10 years
+
+```{r plot_sim_study_progtime, fig.width=5, fig.height=3, fig.align="center", echo = FALSE}
+  plot_sim_study_progtime
+```
+
+## Simulation Results - 3
 ```{r boxplots}
 ui_box <- fluidPage(
   tags$span(style="font-weight: bold; color: black; font-size: 20px;", "Patient Selection: "),
-  bsButton("button_boxplot_all", label = "All patients", style = "primary"),
-  bsButton("button_boxplot_fast", label = "Fast (30% patients)"),
+  bsButton("button_boxplot_all", label = "All patients"),
+  bsButton("button_boxplot_fast", label = "Fast (30% patients)", style = "primary"),
   bsButton("button_boxplot_intermediate", label = "Intermediate (20% patients)"),
   bsButton("button_boxplot_slow", label = "Slow (50% patients)"),
   hr(),
@@ -521,7 +528,7 @@ server_box <- function(input, output, session){
     output$plot_boxplot = renderPlot(boxplot_slow)
   })
 
-  output$plot_boxplot <- renderPlot(boxplot_all)
+  output$plot_boxplot <- renderPlot(boxplot_fast)
 }
 
 shinyApp(ui_box, server_box)
