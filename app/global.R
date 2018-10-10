@@ -329,9 +329,13 @@ riskColumnGraph = function(data, curVisitTime, riskThreshold, meanRiskProb){
 riskGaugeGraph = function(data, curVisitTime, riskThreshold, meanRiskProb){
   if(meanRiskProb >= riskThreshold){
     fillColor = "red3"
+    riskThresholdArrowColor = "white"
   }else{
     fillColor = "forestgreen"
+    riskThresholdArrowColor = "firebrick1"
   }
+  
+  
   
   curVisitDate = format(as.POSIXct(curVisitTime * 365 * 24 * 60 * 60 + data$dom[1], origin = "1582-10-14"),
                   format = "%b %e, %Y")
@@ -345,7 +349,8 @@ riskGaugeGraph = function(data, curVisitTime, riskThreshold, meanRiskProb){
     coord_polar(theta = "y",start=-pi/2) + xlim(c(0, 2.5)) + ylim(c(0,2)) +
     geom_text(aes(x = 0, y = 0, label = paste0(round(meanRiskProb*100,2),"%")), color=fillColor, size=8) +
     geom_text(aes(x=0.5, y=1.5, label = riskGaugeLabel), size=6, color=fillColor) +
-    geom_segment(aes(x=0.8, xend=2.2, y=riskThreshold, yend=riskThreshold), color='firebrick1', linetype='dashed')+
+    geom_segment(aes(x=1, xend=2, y=riskThreshold, yend=riskThreshold), color=riskThresholdArrowColor,
+                 arrow = arrow(length = unit(0.4,"cm")))+
     geom_text(aes(x=2.4, y=riskThreshold, label=paste0("Biopsy threshold\n", round(riskThreshold * 100,2), "%")), size=5, color='firebrick1') +
     theme_void() +
     theme(strip.background = element_blank(),
@@ -437,7 +442,7 @@ summaryGraph = function(data, curVisitTime=10, lastBiopsyTime,
     geom_rect() +
     scale_fill_manual("", values="red3") +
     coord_polar(theta = "y",start=-pi/2) + xlim(c(0, 2)) + ylim(c(0,2)) +
-    geom_text(aes(x = 0, y = 0, label = paste0(round(meanRiskProb*100,2),"%")), color='red3', size=6) +
+    geom_text(aes(x = 0, y = 0, label = paste0(round(meanRiskProb*100,2),"%")), color='red3', size=8) +
     geom_text(aes(x=0.5, y=1.5, label = riskGaugeLabel), size=6, color="red3") +
     theme_void() +
     theme(strip.background = element_blank(),
