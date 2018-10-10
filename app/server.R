@@ -86,7 +86,19 @@ shinyServer(function(input, output, session) {
     data$log2psaplus1 = log(data$psa + 1, base = 2)
     data$high_dre = ifelse(data$dre=="T1c", 0, 1)
     
+    totalRows = nrow(data)
+    visitNumber = input$visitNumber
+    data = data[1:visitNumber,]
+    
+    if(input$visitNumber > nrow(data)){
+      updateSliderInput(session, "visitNumber", value = 1,
+                      min = 1, max = totalRows)
+    }else{
+      updateSliderInput(session, "visitNumber", min = 1, max = totalRows)
+    }
+    
     if(input$pred_type=="SUMMARY"){
+      
       curVisitTime = max(data$visitTimeYears[!is.na(data$psa) | !is.na(data$dre)])
       lastBiopsyTime = max(data$visitTimeYears[!is.na(data$gleason)])
       
@@ -119,6 +131,17 @@ shinyServer(function(input, output, session) {
                     sep = input$sep, quote = input$quote)
     data$log2psaplus1 = log(data$psa + 1, base = 2)
     data$high_dre = ifelse(data$dre=="T1c", 0, 1)
+    
+    totalRows = nrow(data)
+    visitNumber = input$visitNumber
+    data = data[1:visitNumber,]
+    
+    if(input$visitNumber > nrow(data)){
+      updateSliderInput(session, "visitNumber", value = 1,
+                        min = 1, max = totalRows)
+    }else{
+      updateSliderInput(session, "visitNumber", min = 1, max = totalRows)
+    }
     
     if(input$pred_type=="PSA"){
       return(psaVelocityGraph(data, FONT_SIZE=20, POINT_SIZE = 4))

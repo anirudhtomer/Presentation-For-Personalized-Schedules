@@ -122,9 +122,14 @@ dreObsDataGraph = function(data, FONT_SIZE=15, POINT_SIZE=4){
 psaPredictionGraph = function(data, FONT_SIZE=12, POINT_SIZE = 2){
   last_biomarker_time = max(data$visitTimeYears[!is.na(data$psa) | !is.na(data$dre)])
   max_x_time = max(data$visitTimeYears, na.rm = T)
+  lastBiopsyTime = max(data$visitTimeYears[!is.na(data$gleason)])
   
   futureTimes = seq(0, max_x_time + 1, length.out = 40)
-  predictedPSA_DRE = predictPSADRE(mvJoint_dre_psa_dre_value_light, data, idVar = "P_ID", survTimes = futureTimes)
+  if(data$P_ID[1] %in% names(demo_prias_patients_sfit)){
+    predictedPSA_DRE = demo_prias_patients_sfit[[as.character(data$P_ID[1])]][[nrow(data)]]$predictedPSA_DRE
+  }else{
+    predictedPSA_DRE = predictPSADRE(mvJoint_dre_psa_dre_value_light, data, idVar = "P_ID", survTimes = futureTimes, last.time = lastBiopsyTime)
+  }
   
   meanPredictedLog2psaplus1 = apply(predictedPSA_DRE$trueLog2psaplus1, MARGIN = 1, mean)
   lower95 = apply(predictedPSA_DRE$trueLog2psaplus1, MARGIN = 1, quantile, probs=0.025)
@@ -163,9 +168,15 @@ psaPredictionGraph = function(data, FONT_SIZE=12, POINT_SIZE = 2){
 psaVelocityGraph = function(data, FONT_SIZE=12, POINT_SIZE = 2){
   last_biomarker_time = max(data$visitTimeYears[!is.na(data$psa) | !is.na(data$dre)])
   max_x_time = max(data$visitTimeYears, na.rm = T)
+  lastBiopsyTime = max(data$visitTimeYears[!is.na(data$gleason)])
   
   futureTimes = seq(0, max_x_time + 1, length.out = 40)
-  predictedPSA_DRE = predictPSADRE(mvJoint_dre_psa_dre_value_light, data, idVar = "P_ID", survTimes = futureTimes)
+  
+  if(data$P_ID[1] %in% names(demo_prias_patients_sfit)){
+    predictedPSA_DRE = demo_prias_patients_sfit[[as.character(data$P_ID[1])]][[nrow(data)]]$predictedPSA_DRE
+  }else{
+    predictedPSA_DRE = predictPSADRE(mvJoint_dre_psa_dre_value_light, data, idVar = "P_ID", survTimes = futureTimes, last.time = lastBiopsyTime)
+  }
   
   meanPredictedLog2psaplus1 = apply(predictedPSA_DRE$trueLog2psaplus1_velocity, MARGIN = 1, mean)
   lower95 = apply(predictedPSA_DRE$trueLog2psaplus1_velocity, MARGIN = 1, quantile, probs=0.025)
@@ -335,8 +346,6 @@ riskGaugeGraph = function(data, curVisitTime, riskThreshold, meanRiskProb){
     riskThresholdArrowColor = "firebrick1"
   }
   
-  
-  
   curVisitDate = format(as.POSIXct(curVisitTime * 365 * 24 * 60 * 60 + data$dom[1], origin = "1582-10-14"),
                   format = "%b %e, %Y")
   
@@ -369,8 +378,12 @@ summaryGraph = function(data, curVisitTime=10, lastBiopsyTime,
   
   patientDs =  data[!(is.na(data$dre) & is.na(data$psa)),]
   
-  sfit = survfitJM(mvJoint_dre_psa_dre_value_light, patientDs, idVar="P_ID", 
+  if(data$P_ID[1] %in% names(demo_prias_patients_sfit)){
+    sfit = demo_prias_patients_sfit[[as.character(data$P_ID[1])]][[nrow(data)]]$sfit
+  }else{
+    sfit = survfitJM(mvJoint_dre_psa_dre_value_light, patientDs, idVar="P_ID", 
                    survTimes = curVisitTime, last.time = lastBiopsyTime)
+  }
   
   meanRiskProb = 1 - sfit$summaries[[1]][, "Mean"]
   

@@ -74,6 +74,10 @@ shinyUI(fluidPage(
                                  choices = c("Risk of cancer progression"="SUMMARY",
                                              "Prostate-specific antigen" = "PSA"),
                                  selected="SUMMARY", inline=T),
+                    sliderInput("visitNumber", "Number of follow-up visits:",
+                        min = 2, max = 10, value = 2, step = 1,
+                        animate = animationOptions(interval = 2000, loop = F, 
+                                                   playButton = NULL, pauseButton = NULL)),
                     plotOutput("graph_prediction",height="500px"),
                     tags$br(),
                     plotOutput("graph_prediction_psa_velocity")
