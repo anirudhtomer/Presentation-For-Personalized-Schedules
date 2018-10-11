@@ -32,6 +32,7 @@ shinyServer(function(input, output, session) {
     
     data = read.csv(inFile$datapath, header=TRUE, dec = input$dec,
                     sep = input$sep, quote = input$quote)
+    data = data[data$visitTimeYears<=10,]
     
     dataToShow = data[1, ]
     dataToShow$lastBiopsyDate = format(as.POSIXct(max(data$dom[!is.na(data$gleason)]), origin = "1582-10-14"), format = "%b %e, %Y")
@@ -61,6 +62,7 @@ shinyServer(function(input, output, session) {
     
     data = read.csv(inFile$datapath, header=TRUE, dec = input$dec,
                     sep = input$sep, quote = input$quote)
+    data = data[data$visitTimeYears<=10,]
     
     # output$graph_obs_dre = renderPlotly({ggplotly(dreObsDataGraph(data), tooltip=c("label")) %>% 
     #         config(displayModeBar = F) %>% 
@@ -85,6 +87,7 @@ shinyServer(function(input, output, session) {
                     sep = input$sep, quote = input$quote)
     data$log2psaplus1 = log(data$psa + 1, base = 2)
     data$high_dre = ifelse(data$dre=="T1c", 0, 1)
+    data = data[data$visitTimeYears<=10,]
     
     totalRows = nrow(data)
     visitNumber = input$visitNumber
@@ -131,6 +134,8 @@ shinyServer(function(input, output, session) {
                     sep = input$sep, quote = input$quote)
     data$log2psaplus1 = log(data$psa + 1, base = 2)
     data$high_dre = ifelse(data$dre=="T1c", 0, 1)
+    
+    data = data[data$visitTimeYears<=10,]
     
     totalRows = nrow(data)
     visitNumber = input$visitNumber
