@@ -1,4 +1,4 @@
-# source("/home/a_tomer/Google Drive/PhD/src/prias/src/decision_analytic/predictPSADRE.R")
+ source("/home/a_tomer/Google Drive/PhD/src/prias/src/decision_analytic/predictPSADRE.R")
 # load("/home/a_tomer/Google Drive/PhD/src/prias/Rdata/decision_analytic/DRE_PSA/mvJoint_dre_psa_dre_value_light.Rdata")
 # load("/home/a_tomer/Google Drive/PhD/src/prias/Rdata/decision_analytic/DRE_PSA/thresholdsList.Rdata")
 # load("/home/a_tomer/Google Drive/PhD/src/prias/Rdata/decision_analytic/Simulation/scheduleResCombined.Rdata")
@@ -123,11 +123,7 @@ psaPredictionGraph = function(data, FONT_SIZE=12, POINT_SIZE = 2){
   lastBiopsyTime = max(data$visitTimeYears[!is.na(data$gleason)])
   
   futureTimes = seq(0, max_x_time + 1, length.out = 40)
-  if(data$P_ID[1] %in% names(demo_prias_patients_sfit)){
-    predictedPSA_DRE = demo_prias_patients_sfit[[as.character(data$P_ID[1])]][[nrow(data)]]$predictedPSA_DRE
-  }else{
-    predictedPSA_DRE = predictPSADRE(mvJoint_dre_psa_dre_value_light, data, idVar = "P_ID", survTimes = futureTimes, last.time = lastBiopsyTime)
-  }
+  predictedPSA_DRE = predictPSADRE(mvJoint_dre_psa_dre_value_light, data, idVar = "P_ID", survTimes = futureTimes, last.time = lastBiopsyTime)
   
   meanPredictedLog2psaplus1 = apply(predictedPSA_DRE$trueLog2psaplus1, MARGIN = 1, mean)
   lower95 = apply(predictedPSA_DRE$trueLog2psaplus1, MARGIN = 1, quantile, probs=0.025)
@@ -171,11 +167,7 @@ psaVelocityGraph = function(data, FONT_SIZE=12, POINT_SIZE = 2){
   
   futureTimes = seq(0, max_x_time + 1, length.out = 40)
   
-  if(data$P_ID[1] %in% names(demo_prias_patients_sfit)){
-    predictedPSA_DRE = demo_prias_patients_sfit[[as.character(data$P_ID[1])]][[nrow(data)]]$predictedPSA_DRE
-  }else{
-    predictedPSA_DRE = predictPSADRE(mvJoint_dre_psa_dre_value_light, data, idVar = "P_ID", survTimes = futureTimes, last.time = lastBiopsyTime)
-  }
+  predictedPSA_DRE = predictPSADRE(mvJoint_dre_psa_dre_value_light, data, idVar = "P_ID", survTimes = futureTimes, last.time = lastBiopsyTime)
   
   meanPredictedLog2psaplus1 = apply(predictedPSA_DRE$trueLog2psaplus1_velocity, MARGIN = 1, mean)
   lower95 = apply(predictedPSA_DRE$trueLog2psaplus1_velocity, MARGIN = 1, quantile, probs=0.025)
@@ -368,8 +360,6 @@ riskGaugeGraph = function(data, curVisitTime, riskThreshold, meanRiskProb){
   return(riskGauge)
 }
 
-
-
 summaryGraph = function(data, curVisitTime=10, lastBiopsyTime,
                         FONT_SIZE=12, POINT_SIZE = 2, DRE_PSA_Y_GAP=0.1){
   
@@ -378,13 +368,9 @@ summaryGraph = function(data, curVisitTime=10, lastBiopsyTime,
   
   patientDs =  data[!(is.na(data$dre) & is.na(data$psa)),]
   
-  if(data$P_ID[1] %in% names(demo_prias_patients_sfit)){
-    sfit = demo_prias_patients_sfit[[as.character(data$P_ID[1])]][[nrow(data)]]$sfit
-  }else{
-    sfit = survfitJM(mvJoint_dre_psa_dre_value_light, patientDs, idVar="P_ID", 
+  sfit = survfitJM(mvJoint_dre_psa_dre_value_light, patientDs, idVar="P_ID", 
                      survTimes = curVisitTime, last.time = lastBiopsyTime)
-  }
-  
+
   meanRiskProb = 1 - sfit$summaries[[1]][, "Mean"]
   
   patientDs$fitted_high_dre_prob = plogis(sfit$fitted.y[[1]]$high_dre)[1:nrow(patientDs)]

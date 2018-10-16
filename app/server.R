@@ -109,9 +109,17 @@ shinyServer(function(input, output, session) {
         curVisitTime = lastBiopsyTime + 0.1
       }
       
-      plot = summaryGraph(data, curVisitTime, lastBiopsyTime, FONT_SIZE=20, POINT_SIZE = 4, DRE_PSA_Y_GAP = 0.2)
+      if(data$P_ID[1] %in% names(demoPatientPlotList)){
+        plot = demoPatientPlotList[[as.character(data$P_ID[1])]][[nrow(data)]]$summaryPlot
+      }else{
+        plot = summaryGraph(data, curVisitTime, lastBiopsyTime, FONT_SIZE=20, POINT_SIZE = 4, DRE_PSA_Y_GAP = 0.2)
+      }
     }else if(input$pred_type=="PSA"){
-      plot = psaPredictionGraph(data, FONT_SIZE=20, POINT_SIZE = 4)
+      if(data$P_ID[1] %in% names(demoPatientPlotList)){
+        plot = demoPatientPlotList[[as.character(data$P_ID[1])]][[nrow(data)]]$psaPredictionPlot
+      }else{
+        plot = psaPredictionGraph(data, FONT_SIZE=20, POINT_SIZE = 4)
+      }
     }else{
       plot = NULL
     }
@@ -149,7 +157,11 @@ shinyServer(function(input, output, session) {
     }
     
     if(input$pred_type=="PSA"){
-      return(psaVelocityGraph(data, FONT_SIZE=20, POINT_SIZE = 4))
+      if(data$P_ID[1] %in% names(demoPatientPlotList)){
+        return(demoPatientPlotList[[as.character(data$P_ID[1])]][[nrow(data)]]$psaVelocityPlot)
+      }else{
+        return(psaVelocityGraph(data, FONT_SIZE=20, POINT_SIZE = 4))
+      }
     }else {
       return(NULL)
     }

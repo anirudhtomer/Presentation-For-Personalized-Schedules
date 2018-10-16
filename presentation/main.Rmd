@@ -117,6 +117,69 @@ plot_jmFitAssocParam = ggplot(data=jointFitAssocRes) + geom_errorbar(aes(x=assoc
   xlab("") + ylab(expression("log Hazard Ratio (95% CI)")) + 
   theme(text = element_text(size=FONT_SIZE),  legend.position = "none")
 
+#AUC plot
+auc_graph = ggplot() + 
+  geom_line(aes(x=1:5, y=c(mean(auc_final_all_0_1),
+                           mean(auc_final_all_1_2),
+                           mean(auc_final_all_2_3),
+                           mean(auc_final_all_3_4),
+                           mean(auc_final_all_4_5)), color="Both PSA and DRE")) +
+  geom_ribbon(aes(x=1:5, ymin=sapply(list(auc_final_all_0_1,
+                            auc_final_all_1_2, auc_final_all_2_3,
+                            auc_final_all_3_4, auc_final_all_4_5), quantile, probs=0.025),
+                  ymax = sapply(list(auc_final_all_0_1,
+                              auc_final_all_1_2, auc_final_all_2_3,
+                              auc_final_all_3_4, auc_final_all_4_5), quantile, probs=0.975)),
+              fill='firebrick1', alpha=0.2) +
+  geom_line(aes(x=1:5, y=c(mean(auc_final_nodre_0_1),
+                           mean(auc_final_nodre_1_2),
+                           mean(auc_final_nodre_2_3),
+                           mean(auc_final_nodre_3_4),
+                           mean(auc_final_nodre_4_5)), color="Only PSA")) +
+  geom_ribbon(aes(x=1:5, ymin=sapply(list(auc_final_nodre_0_1,
+                                          auc_final_nodre_1_2, auc_final_nodre_2_3,
+                                          auc_final_nodre_3_4, auc_final_nodre_4_5), quantile, probs=0.025),
+                  ymax = sapply(list(auc_final_nodre_0_1,
+                                     auc_final_nodre_1_2, auc_final_nodre_2_3,
+                                     auc_final_nodre_3_4, auc_final_nodre_4_5), quantile, probs=0.975)),
+              fill='lightblue', alpha=0.5) +
+  scale_color_manual(name="", values = c('red3', 'dodgerblue4')) + 
+  xlab('Follow up time (years)') + ylab("AUC") + ylim(0,1) +
+  theme_bw() + theme(legend.title = element_blank(), text=element_text(size=FONT_SIZE),
+                     legend.position = "bottom", legend.direction = "horizontal")
+
+#prediction error plot
+prederr_graph = ggplot() + 
+  geom_line(aes(x=1:5, y=c(mean(prederr_final_all_0_1),
+                           mean(prederr_final_all_1_2),
+                           mean(prederr_final_all_2_3),
+                           mean(prederr_final_all_3_4),
+                           mean(prederr_final_all_4_5)), color="Both PSA and DRE")) +
+  geom_ribbon(aes(x=1:5, ymin=sapply(list(prederr_final_all_0_1,
+                                          prederr_final_all_1_2, prederr_final_all_2_3,
+                                          prederr_final_all_3_4, prederr_final_all_4_5), quantile, probs=0.025),
+                  ymax = sapply(list(prederr_final_all_0_1,
+                                     prederr_final_all_1_2, prederr_final_all_2_3,
+                                     prederr_final_all_3_4, prederr_final_all_4_5), quantile, probs=0.975)),
+              fill='firebrick1', alpha=0.2) +
+  geom_line(aes(x=1:5, y=c(mean(prederr_final_nodre_0_1),
+                           mean(prederr_final_nodre_1_2),
+                           mean(prederr_final_nodre_2_3),
+                           mean(prederr_final_nodre_3_4),
+                           mean(prederr_final_nodre_4_5)), color="Only PSA")) +
+  geom_ribbon(aes(x=1:5, ymin=sapply(list(prederr_final_nodre_0_1,
+                                          prederr_final_nodre_1_2, prederr_final_nodre_2_3,
+                                          prederr_final_nodre_3_4, prederr_final_nodre_4_5), quantile, probs=0.025),
+                  ymax = sapply(list(prederr_final_nodre_0_1,
+                                     prederr_final_nodre_1_2, prederr_final_nodre_2_3,
+                                     prederr_final_nodre_3_4, prederr_final_nodre_4_5), quantile, probs=0.975)),
+              fill='lightblue', alpha=0.5) +
+  scale_color_manual(name="", values = c('red3', 'dodgerblue4')) + 
+  xlab('Follow up time (years)') + ylab("Prediction Error") + ylim(0, 0.16) +
+  theme_bw() + theme(legend.title = element_blank(), text=element_text(size=FONT_SIZE),
+                     legend.position = "bottom", legend.direction = "horizontal")
+
+
 #All patients boxplot
 boxplot_nb_all = ggplot() + geom_boxplot(data = scheduleResCombined, aes(x=methodName, y=nb, color=type), outlier.shape = NA) + scale_y_continuous(breaks=c(1,4,7,10), limits = c(1,10)) + theme(text=element_text(size=FONT_SIZE), legend.title = element_blank(), axis.line = element_line()) + xlab("Method") + ylab("Number of biopsies") + coord_flip() + geom_hline(yintercept = 3, linetype='dashed', color='black')
 
@@ -397,10 +460,17 @@ renderPlot({
 ```
 
 ## Joint Model for PRIAS - 3
+- Area under the receiver operating characteristic curve (AUC).
+- Discrimination ability (progression vs. others) in a 1 year time window.
+```{r plot_aucgraph, fig.width=8, fig.height=5, fig.align="center", echo = FALSE}
+  auc_graph
+```
 
-- Predictions, AUC and/or Prediction Error?
-
-
+## Joint Model for PRIAS - 4
+- Prediction Error for predicting progression vs. others, in a 1 year time window.
+```{r plot_prederrgraph, fig.width=8, fig.height=5, fig.align="center", echo = FALSE}
+  prederr_graph
+```
 
 ## Personalized Decision Methodology - 1
 
