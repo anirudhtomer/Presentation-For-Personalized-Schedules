@@ -442,12 +442,13 @@ renderPlot({
 
 ## Joint Model for PRIAS - 1
 
-- $\log_2$ PSA trajectories: Age effect + nonlinear evolutions over time
-- DRE > T1c trajectories: Age effect + linear evolutions over time
+- <strong>Submodel for biomarkers</strong>
+    - $\log_2$ PSA trajectories: Age effect + <span style="color:blue">nonlinear</span> evolutions over time
+    - DRE > T1c trajectories: Age effect + <span style="color:blue">linear</span> evolutions over time
 
 <br/>
 
-- Risk of Gleason reclassification: 
+- <strong>Submodel for Risk of Gleason reclassification </strong>
     - Age effect
     - log odds of DRE > T1c
     - $\log_2$ PSA level
@@ -466,32 +467,35 @@ renderPlot({
   auc_graph
 ```
 
-## Joint Model for PRIAS - 4
-- Prediction Error for predicting progression vs. others, in a 1 year time window.
-```{r plot_prederrgraph, fig.width=8, fig.height=5, fig.align="center", echo = FALSE}
-  prederr_graph
-```
+<!-- ## Joint Model for PRIAS - 4 -->
+<!-- - Prediction Error for predicting progression vs. others, in a 1 year time window. -->
+<!-- ```{r plot_prederrgraph, fig.width=8, fig.height=5, fig.align="center", echo = FALSE} -->
+<!--   prederr_graph -->
+<!-- ``` -->
 
 ## Personalized Decision Methodology - 1
-
-- Base on the joint model, and at any follow-up time we can calculate a patient's 
- <span style="color:blue">current</span> risk of progression
+- <strong>A new patient, a new visit</strong>
+    - At some follow-up time, with a certain history of PSA, DRE and biopsies. 
+    - We combine this information using joint model, to obtain <span style="color:red">risk of cancer progression </span> at that visit.
 
 <br/>
 
-- How to select when to perform a biopsy?
-
+- <strong>How to select when to perform a biopsy?</strong>
     - **Solution 1:** A fixed treshold, 15% within a year
         - <span style="color:red">however, the same for all time points</span>
         
 ## Personalized Decision Methodology - 2
 
-- How to select when to perform a biopsy?
-
+- <strong>How to select when to perform a biopsy?</strong>
     - **Solution 2:** Dynamic treshold based on PRIAS
-        - we want both high sensitivity and high positive predictive value
-        - we select the treshold that maximizes the F1 score
+        - we want both high sensitivity and high positive predictive value.
+        - basically we don't want too many FP or FN.
         $$F1 = 2\frac{SN \times PPV}{SN + PPV}$$
+        
+        <br/>
+        
+        - we select the treshold that maximizes the F1 score
+        
 
 ## Personalized Decision Methodology - 3
 
