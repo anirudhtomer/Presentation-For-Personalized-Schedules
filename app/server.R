@@ -95,7 +95,7 @@ shinyServer(function(input, output, session) {
     
     if(input$visitNumber > nrow(data)){
       updateSliderInput(session, "visitNumber", value = 1,
-                      min = 1, max = totalRows)
+                        min = 1, max = totalRows)
     }else{
       updateSliderInput(session, "visitNumber", min = 1, max = totalRows)
     }
@@ -220,9 +220,14 @@ and positive predictive value."
       riskThreshold = 1 - getSurvThreshold(lastBiopsyTime, curVisitTime)
     }
     
-    sfit = survfitJM(mvJoint_dre_psa_dre_value_light, data, idVar="P_ID", 
-                     survTimes = curVisitTime, last.time = lastBiopsyTime)
-    meanRiskProb = 1 - sfit$summaries[[1]][, "Mean"]
+    if(data$P_ID[1] %in% names(demoPatientPlotList)){
+      patientPlotList = demoPatientPlotList[[as.character(data$P_ID[1])]]
+      meanRiskProb = patientPlotList[[length(patientPlotList)]]$riskProb
+    }else{
+      sfit = survfitJM(mvJoint_dre_psa_dre_value_light, data, idVar="P_ID", 
+                       survTimes = curVisitTime, last.time = lastBiopsyTime)
+      meanRiskProb = 1 - sfit$summaries[[1]][, "Mean"]
+    }
     
     if(meanRiskProb >= riskThreshold){
       if(curVisitTime - lastBiopsyTime >= 1 | input$year_gap_biopsy=="No"){
